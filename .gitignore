@@ -8,12 +8,6 @@ ENV/
 env/
 .env
 
-# ANTLR generated files
-Cminus*.py
-Cminus*.tokens
-Cminus*.interp
-ANTLR_p1
-
 # Scanner output files
 tokens.txt
 lexical_errors.txt
