@@ -184,7 +184,6 @@ def run_antlr(grammar_file):
                 return True
             elif os.path.exists(alternative_lexer_file):
                 print(f"Found alternative lexer file: {alternative_lexer_file}")
-                # Rename file to match expected pattern if needed
                 if alternative_lexer_file != expected_lexer_file:
                     print(f"Renaming {alternative_lexer_file} to {expected_lexer_file}")
                     os.rename(alternative_lexer_file, expected_lexer_file)
@@ -198,7 +197,6 @@ def run_antlr(grammar_file):
         finally:
             os.chdir(original_dir)
     except subprocess.CalledProcessError as e:
-        # This block catches errors if check=True and the process returns a non-zero exit code.
         print(f"ANTLR command failed with exit code {e.returncode}.")
         print(f"Command: {' '.join(e.cmd)}")
         if e.stdout:
@@ -216,7 +214,6 @@ def tokenize_with_antlr(input_file):
     """Use ANTLR to tokenize an input file directly using the Python runtime."""
     ensure_antlr_dir()
     antlr_output_filepath = os.path.join(ANTLR_DIR, "ANTLR_p1")
-    # Also create a copy in the current directory for compatibility with cminus.py
     current_dir_output = "ANTLR_p1"
     
     try:
@@ -226,7 +223,7 @@ def tokenize_with_antlr(input_file):
         print("Please install it with: pip install antlr4-python3-runtime")
         return None
 
-    grammar_name_from_file = "CMinus" # Assumes the grammar is named CMinus
+    grammar_name_from_file = "CMinus" 
     lexer_class_name = grammar_name_from_file + "Lexer"
     lexer_py_filename = lexer_class_name + ".py"
     lexer_py_file_path = os.path.join(ANTLR_DIR, lexer_py_filename)
@@ -236,11 +233,9 @@ def tokenize_with_antlr(input_file):
         print("Ensure ANTLR has generated the lexer successfully by calling run_antlr() first.")
         return None
 
-    # Check the content of the lexer file to determine actual class name
     with open(lexer_py_file_path, 'r', encoding='utf-8') as f:
         lexer_content = f.read()
         
-    # Try to find the actual class name from the file (assumes format "class SomeName(...)")
     import re
     class_match = re.search(r'class\s+(\w+)', lexer_content)
     actual_class_name = class_match.group(1) if class_match else lexer_class_name
@@ -257,7 +252,6 @@ def tokenize_with_antlr(input_file):
     dynamic_module_name = f"dynamically_loaded_{lexer_class_name}"
 
     try:
-        # Import using the filename without .py to get the module
         module_name = os.path.splitext(os.path.basename(lexer_py_filename))[0]
         print(f"Trying to import module: {module_name}")
         
@@ -274,7 +268,6 @@ def tokenize_with_antlr(input_file):
         sys.modules[dynamic_module_name] = CMinusModule
         spec.loader.exec_module(CMinusModule)
         
-        # Try to get the class using the actual class name detected
         try:
             ActualCMinusClass = getattr(CMinusModule, actual_class_name)
             print(f"Successfully loaded {actual_class_name} class from module.")
@@ -284,7 +277,6 @@ def tokenize_with_antlr(input_file):
                 if not attr.startswith('__'):
                     print(f"  - {attr}")
             
-            # Try to find any class in the module that might be the lexer
             for attr in dir(CMinusModule):
                 if not attr.startswith('__') and attr.endswith('Lexer'):
                     ActualCMinusClass = getattr(CMinusModule, attr)
@@ -295,17 +287,15 @@ def tokenize_with_antlr(input_file):
         print(f"ANTLR dynamic lexer loading failed: {e}")
         import traceback
         traceback.print_exc()
-        # Restore sys.path and clean sys.modules even on failure here
         sys.path = original_sys_path
         if dynamic_module_name in sys.modules:
              del sys.modules[dynamic_module_name]
         return None 
-    # No finally block for sys.path restoration here; do it after successful tokenization or error in that phase
 
     if ActualCMinusClass is None:
         print(f"Failed to get {lexer_class_name} class after attempting to load module.")
-        sys.path = original_sys_path # Restore path
-        if dynamic_module_name in sys.modules: # Clean sys.modules
+        sys.path = original_sys_path
+        if dynamic_module_name in sys.modules: 
              del sys.modules[dynamic_module_name]
         return None
 
@@ -320,7 +310,7 @@ def tokenize_with_antlr(input_file):
             line_tokens = []
             
             for token in tokens:
-                if token.channel == Token.HIDDEN_CHANNEL: # Filter skipped tokens
+                if token.channel == Token.HIDDEN_CHANNEL: 
                     continue
                 if token.type == Token.EOF:
                     continue
@@ -343,14 +333,13 @@ def tokenize_with_antlr(input_file):
                 else:
                     token_type_name = f"TYPE_{token.type}" 
 
-                token_text = token.text.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t') # Escape control chars in output
+                token_text = token.text.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
                 
                 line_tokens.append(f"({token_type_name}, {token_text})")
             
             if line_tokens:
                 f.write(f"{current_line}.\t{' '.join(line_tokens)} \n")
         
-        # Also copy the file to the current directory for compatibility with cminus.py
         shutil.copy(antlr_output_filepath, current_dir_output)
         print(f"Copied ANTLR output to current directory: {current_dir_output}")
         
@@ -360,7 +349,7 @@ def tokenize_with_antlr(input_file):
         import traceback
         traceback.print_exc()
         return None
-    finally: # Ensure sys.path and sys.modules are cleaned up regardless of tokenization success/failure
+    finally: 
         sys.path = original_sys_path
         if dynamic_module_name in sys.modules:
              del sys.modules[dynamic_module_name]
@@ -369,7 +358,7 @@ def tokenize_with_antlr(input_file):
 def check(tokens_file, antlr_file):
     """Compare the tokens from our scanner with ANTLR's output."""
     try:
-        # Check if antlr_file is a relative path within the ANTLR directory
+        # Checking ANTLR`s` directory
         if not os.path.isabs(antlr_file) and not os.path.exists(antlr_file):
             antlr_file_in_dir = os.path.join(ANTLR_DIR, antlr_file)
             if os.path.exists(antlr_file_in_dir):
@@ -390,7 +379,7 @@ def check(tokens_file, antlr_file):
         if similarity < 100:
             print(f"\n--- Our Tokens (Normalized) ---\n{our_tokens_normalized}")
             print(f"\n--- ANTLR Tokens (Normalized) ---\n{antlr_tokens_normalized}")
-            # Using a unique name for temp files to avoid collision if run multiple times quickly
+
             with tempfile.NamedTemporaryFile(mode='w', delete=False, prefix=f"our_tokens_norm_{os.path.basename(tokens_file)}_", suffix=".txt", encoding='utf-8') as tf_our:
                 tf_our.write(our_tokens_normalized)
                 print(f"Our normalized tokens saved to: {tf_our.name}")
@@ -410,10 +399,10 @@ def check(tokens_file, antlr_file):
 
 def normalize_tokens(token_text):
     """Normalize token formats to make them comparable."""
-    # First remove line numbers 
+    # Removing line numbers 
     normalized = re.sub(r'^\d+\.\s*\t?', '', token_text, flags=re.MULTILINE)
     
-    # Map ANTLR's specific token types to more generic types to match the scanner output
+    # Mapping ANTLR specific token types
     symbol_types = [
         'SEMI', 'COMMA', 'LBRACK', 'RBRACK', 'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE',
         'PLUS', 'MINUS', 'TIMES', 'DIV', 'ASSIGN', 'LESS', 'EQ'
@@ -423,15 +412,15 @@ def normalize_tokens(token_text):
         'IF', 'ELSE', 'VOID', 'INT', 'REPEAT', 'BREAK', 'UNTIL', 'RETURN'
     ]
     
-    # Replace all symbol types with SYMBOL
+    # Replacing all symbols with SYMBOL
     for sym_type in symbol_types:
         normalized = re.sub(r'\(' + sym_type + r',\s*([^)]+)\)', r'(SYMBOL, \1)', normalized)
     
-    # Replace all keyword types with KEYWORD
+    # Replacing all keywords with KEYWORD
     for key_type in keyword_types:
         normalized = re.sub(r'\(' + key_type + r',\s*([^)]+)\)', r'(KEYWORD, \1)', normalized)
     
-    # Normalize whitespace
+    # Normalizing whitespaces
     normalized = re.sub(r'\s+', ' ', normalized).strip()
     
     return normalized
@@ -447,7 +436,6 @@ def clean_antlr_output():
             print(f"Failed to remove directory {ANTLR_DIR}: {e}. Attempting to clean individual files.")
             clean_antlr_files() 
     
-    # Also clean up any copied files in the current directory
     if os.path.exists("ANTLR_p1"):
         try:
             os.remove("ANTLR_p1")
@@ -488,80 +476,3 @@ def clean_antlr_files():
                 print(f"Removed ANTLR file: {file_path}")
             except Exception as e:
                 print(f"Failed to remove {file_path}: {e}")
-
-
-if __name__ == '__main__':
-    print("Starting C-minus ANTLR integration process...")
-
-    print("\n--- Cleaning up previous ANTLR output ---")
-    clean_antlr_output() 
-
-    print("\n--- Generating ANTLR grammar file ---")
-    grammar_file_path = generate_antlr_grammar()
-    if not grammar_file_path or not os.path.exists(grammar_file_path):
-        print("Failed to generate grammar file. Exiting.")
-        sys.exit(1)
-    print(f"Grammar file generated: {grammar_file_path}")
-
-    print("\n--- Running ANTLR to generate Python lexer ---")
-    if not run_antlr(grammar_file_path): 
-        print("ANTLR lexer generation failed. Exiting.")
-        sys.exit(1)
-    print("ANTLR lexer generation successful.")
-
-    # Using the test input provided by the user
-    test_cminus_code = """
-int min(voi){
-	repeat {
-		x = 23apple;
-		mk3 = x + 1;
-		if (mk3 == 52) {
-			b =# 32;
-			return;
-		}
-		break;}
-	} until (arr[2milk])
-	#this = 2;
-	return;;!
-}
-// end of the code
-/* end of end of the code
-// hmmmmmm
-@#$#%%$*/
-"""
-    temp_dir = tempfile.mkdtemp()
-    # Ensure the temp_dir path is robust
-    cminus_input_file_path = os.path.join(temp_dir, "test_input.cm")
-
-    with open(cminus_input_file_path, "w", encoding='utf-8') as f:
-        f.write(test_cminus_code)
-    print(f"\n--- Created dummy C-minus input file: {cminus_input_file_path} ---")
-    
-    print("\n--- Tokenizing input file with ANTLR-generated lexer ---")
-    antlr_token_output_file = tokenize_with_antlr(cminus_input_file_path)
-    if not antlr_token_output_file:
-        print("ANTLR tokenization failed. Exiting.")
-        shutil.rmtree(temp_dir) 
-        sys.exit(1)
-    print(f"ANTLR tokenization successful. Output: {antlr_token_output_file}")
-
-    if os.path.exists(antlr_token_output_file):
-        print("\n--- ANTLR Tokens (from ANTLR_p1, HIDDEN_CHANNEL tokens are skipped) ---")
-        with open(antlr_token_output_file, 'r', encoding='utf-8') as f:
-            print(f.read())
-            
-    # Create a dummy file for "your_scanner_output" to allow comparison
-    # In a real scenario, your_scanner_output_file would be generated by your scanner.
-    your_scanner_output_file_path = os.path.join(temp_dir, "your_scanner_output.txt")
-    if antlr_token_output_file and os.path.exists(antlr_token_output_file):
-       shutil.copy(antlr_token_output_file, your_scanner_output_file_path)
-       print(f"\n--- Assuming 'your_scanner_output.txt' is a copy of ANTLR's output for this test: {your_scanner_output_file_path} ---")
-    
-       print("\n--- Comparing outputs ---")
-       similarity_percentage = check(your_scanner_output_file_path, antlr_token_output_file)
-       print(f"\nSimilarity (for this test, should be 100%): {similarity_percentage:.2f}%")
-
-    print("\n--- Final Cleanup ---")
-    # clean_antlr_output() # Optional: clean ANTLR dir after run
-    shutil.rmtree(temp_dir) 
-    print("Process completed.")
