@@ -1,20 +1,20 @@
-#!/usr/bin/env python3
-# ANTLR integration for C-minus Scanner
 
-import importlib.util  # Added for dynamic module loading
+
+
+import importlib.util  
 import os
 import re
 import shutil
 import subprocess
-import sys  # Added for sys.path manipulation and sys.executable
+import sys  
 import tempfile
 from difflib import SequenceMatcher
 
-# Define ANTLR directory
+
 ANTLR_DIR = "antlr"
 
-# ANTLR grammar template for C-minus lexer
-# (Corrected version)
+
+
 GRAMMAR_TEMPLATE = r"""// Define this as a lexer grammar.
 // Save this content in a file named "CMinus.g4"
 lexer grammar CMinus;
@@ -86,8 +86,8 @@ def generate_antlr_grammar():
     ensure_antlr_dir()
     grammar_file = os.path.join(ANTLR_DIR, "CMinus.g4")
     
-    # Normalize line endings to LF before writing to prevent potential \r issues with ANTLR tool
-    # although ANTLR should typically handle CRLF. This is an extra precaution.
+    
+    
     normalized_grammar = GRAMMAR_TEMPLATE.replace('\r\n', '\n').replace('\r', '\n')
     with open(grammar_file, "w", encoding='utf-8', newline='\n') as f:
         f.write(normalized_grammar)
@@ -98,23 +98,23 @@ def run_antlr(grammar_file):
     """Run ANTLR to generate lexer from grammar file."""
     try:
         original_dir = os.getcwd()
-        # ANTLR tool is generally run from the directory containing the grammar file.
-        # The grammar_file path is absolute or relative to the original_dir.
-        # We change to ANTLR_DIR where CMinus.g4 is located.
+        
+        
+        
         os.chdir(ANTLR_DIR)
-        grammar_basename = os.path.basename(grammar_file) # Should be CMinus.g4
+        grammar_basename = os.path.basename(grammar_file) 
         
         try:
-            # Check for the specific jar path found in error log first
+            
             goldsmith_jar_path = '/Users/goldsmith/antlr-4.9.2-complete.jar'
-            # Try to locate antlr jar
-            # Option 1: In parent directory (project root relative to ANTLR_DIR)
+            
+            
             antlr_jar_project_root = os.path.join('..', 'antlr-4.9.2-complete.jar')
-            # Option 2: In ANTLR_DIR itself
+            
             antlr_jar_antlr_dir = 'antlr-4.9.2-complete.jar'
             
             antlr_cmd_base = ['java', '-jar']
-            antlr_tool_options = ['-Dlanguage=Python3', grammar_basename] # Use just the basename
+            antlr_tool_options = ['-Dlanguage=Python3', grammar_basename] 
 
             if os.path.exists(goldsmith_jar_path):
                 antlr_cmd = antlr_cmd_base + [goldsmith_jar_path] + antlr_tool_options
@@ -131,45 +131,45 @@ def run_antlr(grammar_file):
                     antlr_cmd = antlr_cmd_base + [antlr_jar_env] + antlr_tool_options
                     print(f"Using ANTLR jar from environment variable: {antlr_jar_env}")
                 else:
-                    # Before falling back to 'antlr4' command, check if the jar path is valid
+                    
                     if '/Users/goldsmith/antlr-4.9.2-complete.jar' in ' '.join(antlr_cmd_base):
                         jar_path = '/Users/goldsmith/antlr-4.9.2-complete.jar'
                         if not os.path.exists(jar_path):
                             print(f"Error: ANTLR jar not found at {jar_path}")
                             print("Falling back to antlr4 command...")
                     
-                    # Fallback to 'antlr4' command if ANTLR_JAR is not found or specified
+                    
                     print("ANTLR jar not found, trying the antlr4 command...")
                     try:
-                        # First check if antlr4 is available and get its version
+                        
                         antlr4_version_cmd = ['antlr4', '-version']
                         version_process = subprocess.run(antlr4_version_cmd, check=False, capture_output=True, text=True)
                         if version_process.returncode == 0:
                             print(f"Using antlr4 command: {version_process.stdout.strip()}")
                             antlr_cmd = ['antlr4'] + antlr_tool_options
                         else:
-                            # Try python -m antlr4 as a fallback
+                            
                             print("antlr4 command not found, trying python -m antlr4...")
                             antlr_cmd = [sys.executable, '-m', 'antlr4'] + antlr_tool_options
                     except Exception as e:
                         print(f"Error checking antlr4 command: {e}")
-                        antlr_cmd = ['antlr4'] + antlr_tool_options  # Try anyway as last resort
+                        antlr_cmd = ['antlr4'] + antlr_tool_options  
             
             print(f"Running ANTLR command: {' '.join(antlr_cmd)} in directory {os.getcwd()}")
             process = subprocess.run(antlr_cmd, check=False, capture_output=True, text=True, encoding='utf-8')
             
-            # Always print ANTLR output
+            
             if process.stdout:
                 print(f"ANTLR stdout:\n{process.stdout}")
             if process.stderr:
                 print(f"ANTLR stderr:\n{process.stderr}")
             
-            # Check return code manually
+            
             if process.returncode != 0:
                 print(f"ANTLR command failed with exit code {process.returncode}")
                 return False
 
-            # List all files in the current directory to see what ANTLR generated
+            
             print("Files in ANTLR directory after running command:")
             for file in os.listdir('.'):
                 print(f"  {file}")
@@ -180,7 +180,7 @@ def run_antlr(grammar_file):
             if os.path.exists(expected_lexer_file):
                 print(f"Found expected lexer file: {expected_lexer_file}")
                 with open('__init__.py', 'w', encoding='utf-8') as f:
-                    f.write("# ANTLR-generated package\n")
+                    f.write("
                 return True
             elif os.path.exists(alternative_lexer_file):
                 print(f"Found alternative lexer file: {alternative_lexer_file}")
@@ -188,7 +188,7 @@ def run_antlr(grammar_file):
                     print(f"Renaming {alternative_lexer_file} to {expected_lexer_file}")
                     os.rename(alternative_lexer_file, expected_lexer_file)
                 with open('__init__.py', 'w', encoding='utf-8') as f:
-                    f.write("# ANTLR-generated package\n")
+                    f.write("
                 return True
             else:
                 print(f"Error: ANTLR did not generate the lexer file ({expected_lexer_file}).")
@@ -358,7 +358,7 @@ def tokenize_with_antlr(input_file):
 def check(tokens_file, antlr_file):
     """Compare the tokens from our scanner with ANTLR's output."""
     try:
-        # Checking ANTLR`s` directory
+        
         if not os.path.isabs(antlr_file) and not os.path.exists(antlr_file):
             antlr_file_in_dir = os.path.join(ANTLR_DIR, antlr_file)
             if os.path.exists(antlr_file_in_dir):
@@ -399,10 +399,10 @@ def check(tokens_file, antlr_file):
 
 def normalize_tokens(token_text):
     """Normalize token formats to make them comparable."""
-    # Removing line numbers 
+    
     normalized = re.sub(r'^\d+\.\s*\t?', '', token_text, flags=re.MULTILINE)
     
-    # Mapping ANTLR specific token types
+    
     symbol_types = [
         'SEMI', 'COMMA', 'LBRACK', 'RBRACK', 'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE',
         'PLUS', 'MINUS', 'TIMES', 'DIV', 'ASSIGN', 'LESS', 'EQ'
@@ -412,15 +412,15 @@ def normalize_tokens(token_text):
         'IF', 'ELSE', 'VOID', 'INT', 'REPEAT', 'BREAK', 'UNTIL', 'RETURN'
     ]
     
-    # Replacing all symbols with SYMBOL
+    
     for sym_type in symbol_types:
         normalized = re.sub(r'\(' + sym_type + r',\s*([^)]+)\)', r'(SYMBOL, \1)', normalized)
     
-    # Replacing all keywords with KEYWORD
+    
     for key_type in keyword_types:
         normalized = re.sub(r'\(' + key_type + r',\s*([^)]+)\)', r'(KEYWORD, \1)', normalized)
     
-    # Normalizing whitespaces
+    
     normalized = re.sub(r'\s+', ' ', normalized).strip()
     
     return normalized
