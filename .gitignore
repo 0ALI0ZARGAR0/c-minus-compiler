@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# ANTLR generated files
+Cminus*.py
+Cminus*.tokens
+Cminus*.interp
+ANTLR_p1
+
+# Scanner output files
+tokens.txt
+lexical_errors.txt
+symbol_table.txt
+
+# Java/ANTLR related
+*.class
+*.jar
+.antlr/
+
+# OS specific
+.DS_Store
+Thumbs.db
+.directory
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo 
+
+T*
