@@ -1,26 +1,22 @@
 
 
 
-import importlib.util  
+import importlib.util
 import os
 import re
 import shutil
 import subprocess
-import sys  
+import sys
 import tempfile
 from difflib import SequenceMatcher
-
 
 ANTLR_DIR = "antlr"
 
 
 
-GRAMMAR_TEMPLATE = r"""// Define this as a lexer grammar.
-// Save this content in a file named "CMinus.g4"
+GRAMMAR_TEMPLATE = r"""
 lexer grammar CMinus;
 
-// Keywords
-// These are defined first so they take precedence over the ID rule.
 IF: 'if';
 ELSE: 'else';
 VOID: 'void';
@@ -30,7 +26,6 @@ BREAK: 'break';
 UNTIL: 'until';
 RETURN: 'return';
 
-// Symbols
 ASSIGN: '=';      // Assignment operator
 EQ:     '==';     // Equality operator
 LPAREN: '(';      // Left parenthesis
@@ -47,32 +42,13 @@ TIMES:  '*';      // Multiplication operator
 DIV:    '/';      // Division operator
 LESS:   '<';      // Less than operator
 
-// Identifiers
-// An identifier starts with a letter, followed by zero or more letters or digits.
 ID: [a-zA-Z] [a-zA-Z0-9]*;
 
-// Numbers
-// A number is a sequence of one or more digits.
 NUM: [0-9]+;
 
-// Comments
-// C-style block comments.
-// The '-> skip' action tells ANTLR to find these tokens but not pass them on to the parser (or the token stream you'll inspect).
-// This matches the project requirement that comments are not stored or reported in tokens.txt.
 COMMENT: '/*' .*? '*/' -> skip;
 
-// Whitespace
-// Includes space, tab, carriage return, newline, vertical tab, and form feed.
-// The '-> skip' action also applies here, as whitespace is generally ignored after tokenization.
 WS: [ \t\r\n\u000B\u000C]+ -> skip; // \u000B is Vertical Tab, \u000C is Form Feed
-
-// Note on Error Handling:
-// ANTLR's default behavior for characters that do not match any rule is to create an error token.
-// The specific error types mentioned in your project document, such as "Unmatched comment" for a standalone '*/'
-// or "Invalid number" for a sequence like '123a', have a more nuanced handling in your custom scanner.
-// For example, this ANTLR grammar would tokenize '123a' as NUM (123) followed by ID (a), and '*/' as TIMES (*) followed by DIV (/).
-// Your 'Check()' function, when comparing your scanner's output to ANTLR's, should account for these differences,
-// as ANTLR will primarily report a stream of validly formed tokens according to this grammar.
 """
 
 def ensure_antlr_dir():
@@ -180,7 +156,7 @@ def run_antlr(grammar_file):
             if os.path.exists(expected_lexer_file):
                 print(f"Found expected lexer file: {expected_lexer_file}")
                 with open('__init__.py', 'w', encoding='utf-8') as f:
-                    f.write("
+                    f.write("# ANTLR-generated package\n")
                 return True
             elif os.path.exists(alternative_lexer_file):
                 print(f"Found alternative lexer file: {alternative_lexer_file}")
@@ -188,7 +164,7 @@ def run_antlr(grammar_file):
                     print(f"Renaming {alternative_lexer_file} to {expected_lexer_file}")
                     os.rename(alternative_lexer_file, expected_lexer_file)
                 with open('__init__.py', 'w', encoding='utf-8') as f:
-                    f.write("
+                    f.write("# ANTLR-generated package\n")
                 return True
             else:
                 print(f"Error: ANTLR did not generate the lexer file ({expected_lexer_file}).")
