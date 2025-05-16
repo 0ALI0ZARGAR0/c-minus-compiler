@@ -49,7 +49,9 @@ class CharacterScanner:
         self.column = 0
         self.tokens = []
         # Add keywords to symbol table initially
-        self.symbol_table = list(KEYWORDS)
+        self.symbol_table = set(KEYWORDS)
+        # Track symbols in order of appearance
+        self.symbol_order = []
         self.lexical_errors = []
         self.current_char = self.input_text[0] if len(self.input_text) > 0 else ''
         logger.debug(f"Scanner initialized: input_text length={len(input_text)}, initial char='{self.current_char}'")
@@ -198,7 +200,7 @@ class CharacterScanner:
         identifier = ""
 
         while (self.position < len(self.input_text) and
-               self.current_char.isalnum()): # Allow digits in identifiers after the first char
+                self.current_char.isalnum()): # Allow digits in identifiers after the first char
             identifier += self.current_char
             self.advance()
 
@@ -229,9 +231,12 @@ class CharacterScanner:
             elif identifier: # Ensure identifier is not empty (shouldn't happen with initial check)
                 logger.debug(f"HANDLE_IDENTIFIER: Identified as ID: '{identifier}'")
                 self.add_token(TokenType.ID, identifier)
-                self.symbol_table.append(identifier) if identifier not in self.symbol_table else None
+                self.symbol_table.add(identifier)
+                # Track order of appearance (only if not already in the list)
+                if identifier not in self.symbol_order and identifier not in KEYWORDS:
+                    self.symbol_order.append(identifier)
             else:
-                 logger.debug(f"HANDLE_IDENTIFIER: Identifier started but no characters were collected. Current char: '{self.current_char}'")
+                logger.debug(f"HANDLE_IDENTIFIER: Identifier started but no characters were collected. Current char: '{self.current_char}'")
 
 
     def handle_number(self):
@@ -267,7 +272,10 @@ class CharacterScanner:
                 logger.debug(f"HANDLE_NUMBER: Extracted remaining identifier '{remaining_id}' after invalid number")
                 # Add the remaining part as an identifier to symbol table
                 self.add_token(TokenType.ID, remaining_id)
-                self.symbol_table.append(remaining_id) if remaining_id not in self.symbol_table else None
+                self.symbol_table.add(remaining_id)
+                # Track order of appearance
+                if remaining_id not in self.symbol_order and remaining_id not in KEYWORDS:
+                    self.symbol_order.append(remaining_id)
             
             logger.debug("HANDLE_NUMBER: Finished handling invalid number sequence.")
             return
@@ -478,9 +486,8 @@ class CharacterScanner:
                 keyword_list_order = ["break", "else", "if", "int", "repeat", "return", "until", "void"]
                 all_symbols.extend([kw for kw in keyword_list_order if kw in self.symbol_table])
 
-                # Add other identifiers in alphabetical order
-                non_keywords = sorted(symbol for symbol in self.symbol_table if symbol not in keyword_list_order)
-                all_symbols.extend(non_keywords)
+                # Add identifiers in order of appearance
+                all_symbols.extend(self.symbol_order)
 
                 # Output all symbols
                 for i, symbol in enumerate(all_symbols, 1):

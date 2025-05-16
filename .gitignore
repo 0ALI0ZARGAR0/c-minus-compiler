@@ -30,3 +30,8 @@ Thumbs.db
 *.swo 
 
 T*
+antlr/antlr/Cminus.interp
+antlr/antlr/CminusLexer.interp
+antlr/antlr/CminusLexer.tokens
+antlr/ANTLR_p1
+antlr/antlr/Cminus.tokens
