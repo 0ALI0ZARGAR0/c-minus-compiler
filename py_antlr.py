@@ -19,38 +19,60 @@ GRAMMAR_TEMPLATE = r"""// Define this as a lexer grammar.
 // Save this content in a file named "CMinus.g4"
 lexer grammar CMinus;
 
-// Comments
-COMMENT : '/*' .*? '*/' -> skip;
-
-INVALID_TOKEN: [0-9]+[a-zA-Z] -> skip;
-
-// Numbers
-NUM : [0-9]+;
-
 // Keywords
-KEYWORD : 'void' | 'int' | 'if' | 'else' | 'repeat' | 'break' | 'until' | 'return';
-
-// Identifiers
-INVALID_ID : [A-Za-z][A-Za-z0-9]*~([A-Za-z0-9 \n\r\t\f] | '(' | ')' | '{' | '}' | '[' | ']' | '+' | '-' | '*' | '/' | '=' | '<' | ';' | ',') -> skip;
-ID : [A-Za-z][A-Za-z0-9]*;
-
-MULTILINE_COMMENT_OPEN : '/*'  -> skip, pushMode(COMMENT_OPEN);
-MULTILINE_COMMENT_CLOSE : '*/'  -> skip;
-SINGLELINE_COMMENT : '/' '/' -> skip;
-SLASH_DIGIT : '/' [0-9] -> skip;
+// These are defined first so they take precedence over the ID rule.
+IF: 'if';
+ELSE: 'else';
+VOID: 'void';
+INT: 'int';
+REPEAT: 'repeat';
+BREAK: 'break';
+UNTIL: 'until';
+RETURN: 'return';
 
 // Symbols
-INVALID_SYMBOL : (SYMBOL_START)~([A-Za-z0-9 \n\r\t\f] | '(' | ')' | '{' | '}' | '[' | ']' | '+' | '-' | '*' | '/' | '=' | '<' | ';' | ',' | '!') -> skip;
-SYMBOL : SYMBOL_START;
+ASSIGN: '=';      // Assignment operator
+EQ:     '==';     // Equality operator
+LPAREN: '(';      // Left parenthesis
+RPAREN: ')';      // Right parenthesis
+LBRACE: '{';      // Left brace
+RBRACE: '}';      // Right brace
+LBRACK: '[';      // Left bracket
+RBRACK: ']';      // Right bracket
+SEMI:   ';';      // Semicolon
+COMMA:  ',';      // Comma
+PLUS:   '+';      // Plus operator
+MINUS:  '-';      // Minus operator
+TIMES:  '*';      // Multiplication operator
+DIV:    '/';      // Division operator
+LESS:   '<';      // Less than operator
 
-fragment
-SYMBOL_START : '==' | '(' | ')' | '{' | '}' | '[' | ']' | '+' | '-' | '*' | '/' | '=' | '<' | ';' | ',';
+// Identifiers
+// An identifier starts with a letter, followed by zero or more letters or digits.
+ID: [a-zA-Z] [a-zA-Z0-9]*;
+
+// Numbers
+// A number is a sequence of one or more digits.
+NUM: [0-9]+;
+
+// Comments
+// C-style block comments.
+// The '-> skip' action tells ANTLR to find these tokens but not pass them on to the parser (or the token stream you'll inspect).
+// This matches the project requirement that comments are not stored or reported in tokens.txt.
+COMMENT: '/*' .*? '*/' -> skip;
 
 // Whitespace
-WHITESPACE : [ \n\r\t\f]+ -> skip;
+// Includes space, tab, carriage return, newline, vertical tab, and form feed.
+// The '-> skip' action also applies here, as whitespace is generally ignored after tokenization.
+WS: [ \t\r\n\u000B\u000C]+ -> skip; // \u000B is Vertical Tab, \u000C is Form Feed
 
-mode COMMENT_OPEN;
-COMMENT_OPEN_SKIP : . -> skip;
+// Note on Error Handling:
+// ANTLR's default behavior for characters that do not match any rule is to create an error token.
+// The specific error types mentioned in your project document, such as "Unmatched comment" for a standalone '*/'
+// or "Invalid number" for a sequence like '123a', have a more nuanced handling in your custom scanner.
+// For example, this ANTLR grammar would tokenize '123a' as NUM (123) followed by ID (a), and '*/' as TIMES (*) followed by DIV (/).
+// Your 'Check()' function, when comparing your scanner's output to ANTLR's, should account for these differences,
+// as ANTLR will primarily report a stream of validly formed tokens according to this grammar.
 """
 
 def ensure_antlr_dir():
@@ -194,6 +216,8 @@ def tokenize_with_antlr(input_file):
     """Use ANTLR to tokenize an input file directly using the Python runtime."""
     ensure_antlr_dir()
     antlr_output_filepath = os.path.join(ANTLR_DIR, "ANTLR_p1")
+    # Also create a copy in the current directory for compatibility with cminus.py
+    current_dir_output = "ANTLR_p1"
     
     try:
         from antlr4 import FileStream, Token
@@ -326,6 +350,10 @@ def tokenize_with_antlr(input_file):
             if line_tokens:
                 f.write(f"{current_line}.\t{' '.join(line_tokens)} \n")
         
+        # Also copy the file to the current directory for compatibility with cminus.py
+        shutil.copy(antlr_output_filepath, current_dir_output)
+        print(f"Copied ANTLR output to current directory: {current_dir_output}")
+        
         return antlr_output_filepath
     except Exception as e:
         print(f"ANTLR tokenization processing failed: {e}")
@@ -382,8 +410,30 @@ def check(tokens_file, antlr_file):
 
 def normalize_tokens(token_text):
     """Normalize token formats to make them comparable."""
+    # First remove line numbers 
     normalized = re.sub(r'^\d+\.\s*\t?', '', token_text, flags=re.MULTILINE)
+    
+    # Map ANTLR's specific token types to more generic types to match the scanner output
+    symbol_types = [
+        'SEMI', 'COMMA', 'LBRACK', 'RBRACK', 'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE',
+        'PLUS', 'MINUS', 'TIMES', 'DIV', 'ASSIGN', 'LESS', 'EQ'
+    ]
+    
+    keyword_types = [
+        'IF', 'ELSE', 'VOID', 'INT', 'REPEAT', 'BREAK', 'UNTIL', 'RETURN'
+    ]
+    
+    # Replace all symbol types with SYMBOL
+    for sym_type in symbol_types:
+        normalized = re.sub(r'\(' + sym_type + r',\s*([^)]+)\)', r'(SYMBOL, \1)', normalized)
+    
+    # Replace all keyword types with KEYWORD
+    for key_type in keyword_types:
+        normalized = re.sub(r'\(' + key_type + r',\s*([^)]+)\)', r'(KEYWORD, \1)', normalized)
+    
+    # Normalize whitespace
     normalized = re.sub(r'\s+', ' ', normalized).strip()
+    
     return normalized
 
 
@@ -438,3 +488,80 @@ def clean_antlr_files():
                 print(f"Removed ANTLR file: {file_path}")
             except Exception as e:
                 print(f"Failed to remove {file_path}: {e}")
+
+
+if __name__ == '__main__':
+    print("Starting C-minus ANTLR integration process...")
+
+    print("\n--- Cleaning up previous ANTLR output ---")
+    clean_antlr_output() 
+
+    print("\n--- Generating ANTLR grammar file ---")
+    grammar_file_path = generate_antlr_grammar()
+    if not grammar_file_path or not os.path.exists(grammar_file_path):
+        print("Failed to generate grammar file. Exiting.")
+        sys.exit(1)
+    print(f"Grammar file generated: {grammar_file_path}")
+
+    print("\n--- Running ANTLR to generate Python lexer ---")
+    if not run_antlr(grammar_file_path): 
+        print("ANTLR lexer generation failed. Exiting.")
+        sys.exit(1)
+    print("ANTLR lexer generation successful.")
+
+    # Using the test input provided by the user
+    test_cminus_code = """
+int min(voi){
+	repeat {
+		x = 23apple;
+		mk3 = x + 1;
+		if (mk3 == 52) {
+			b =# 32;
+			return;
+		}
+		break;}
+	} until (arr[2milk])
+	#this = 2;
+	return;;!
+}
+// end of the code
+/* end of end of the code
+// hmmmmmm
+@#$#%%$*/
+"""
+    temp_dir = tempfile.mkdtemp()
+    # Ensure the temp_dir path is robust
+    cminus_input_file_path = os.path.join(temp_dir, "test_input.cm")
+
+    with open(cminus_input_file_path, "w", encoding='utf-8') as f:
+        f.write(test_cminus_code)
+    print(f"\n--- Created dummy C-minus input file: {cminus_input_file_path} ---")
+    
+    print("\n--- Tokenizing input file with ANTLR-generated lexer ---")
+    antlr_token_output_file = tokenize_with_antlr(cminus_input_file_path)
+    if not antlr_token_output_file:
+        print("ANTLR tokenization failed. Exiting.")
+        shutil.rmtree(temp_dir) 
+        sys.exit(1)
+    print(f"ANTLR tokenization successful. Output: {antlr_token_output_file}")
+
+    if os.path.exists(antlr_token_output_file):
+        print("\n--- ANTLR Tokens (from ANTLR_p1, HIDDEN_CHANNEL tokens are skipped) ---")
+        with open(antlr_token_output_file, 'r', encoding='utf-8') as f:
+            print(f.read())
+            
+    # Create a dummy file for "your_scanner_output" to allow comparison
+    # In a real scenario, your_scanner_output_file would be generated by your scanner.
+    your_scanner_output_file_path = os.path.join(temp_dir, "your_scanner_output.txt")
+    if antlr_token_output_file and os.path.exists(antlr_token_output_file):
+       shutil.copy(antlr_token_output_file, your_scanner_output_file_path)
+       print(f"\n--- Assuming 'your_scanner_output.txt' is a copy of ANTLR's output for this test: {your_scanner_output_file_path} ---")
+    
+       print("\n--- Comparing outputs ---")
+       similarity_percentage = check(your_scanner_output_file_path, antlr_token_output_file)
+       print(f"\nSimilarity (for this test, should be 100%): {similarity_percentage:.2f}%")
+
+    print("\n--- Final Cleanup ---")
+    # clean_antlr_output() # Optional: clean ANTLR dir after run
+    shutil.rmtree(temp_dir) 
+    print("Process completed.")

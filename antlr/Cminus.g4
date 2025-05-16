@@ -2,35 +2,57 @@
 // Save this content in a file named "CMinus.g4"
 lexer grammar CMinus;
 
-// Comments
-COMMENT : '/*' .*? '*/' -> skip;
-
-INVALID_TOKEN: [0-9]+[a-zA-Z] -> skip;
-
-// Numbers
-NUM : [0-9]+;
-
 // Keywords
-KEYWORD : 'void' | 'int' | 'if' | 'else' | 'repeat' | 'break' | 'until' | 'return';
-
-// Identifiers
-INVALID_ID : [A-Za-z][A-Za-z0-9]*~([A-Za-z0-9 \n\r\t\f] | '(' | ')' | '{' | '}' | '[' | ']' | '+' | '-' | '*' | '/' | '=' | '<' | ';' | ',') -> skip;
-ID : [A-Za-z][A-Za-z0-9]*;
-
-MULTILINE_COMMENT_OPEN : '/*'  -> skip, pushMode(COMMENT_OPEN);
-MULTILINE_COMMENT_CLOSE : '*/'  -> skip;
-SINGLELINE_COMMENT : '/' '/' -> skip;
-SLASH_DIGIT : '/' [0-9] -> skip;
+// These are defined first so they take precedence over the ID rule.
+IF: 'if';
+ELSE: 'else';
+VOID: 'void';
+INT: 'int';
+REPEAT: 'repeat';
+BREAK: 'break';
+UNTIL: 'until';
+RETURN: 'return';
 
 // Symbols
-INVALID_SYMBOL : (SYMBOL_START)~([A-Za-z0-9 \n\r\t\f] | '(' | ')' | '{' | '}' | '[' | ']' | '+' | '-' | '*' | '/' | '=' | '<' | ';' | ',' | '!') -> skip;
-SYMBOL : SYMBOL_START;
+ASSIGN: '=';      // Assignment operator
+EQ:     '==';     // Equality operator
+LPAREN: '(';      // Left parenthesis
+RPAREN: ')';      // Right parenthesis
+LBRACE: '{';      // Left brace
+RBRACE: '}';      // Right brace
+LBRACK: '[';      // Left bracket
+RBRACK: ']';      // Right bracket
+SEMI:   ';';      // Semicolon
+COMMA:  ',';      // Comma
+PLUS:   '+';      // Plus operator
+MINUS:  '-';      // Minus operator
+TIMES:  '*';      // Multiplication operator
+DIV:    '/';      // Division operator
+LESS:   '<';      // Less than operator
 
-fragment
-SYMBOL_START : '==' | '(' | ')' | '{' | '}' | '[' | ']' | '+' | '-' | '*' | '/' | '=' | '<' | ';' | ',';
+// Identifiers
+// An identifier starts with a letter, followed by zero or more letters or digits.
+ID: [a-zA-Z] [a-zA-Z0-9]*;
+
+// Numbers
+// A number is a sequence of one or more digits.
+NUM: [0-9]+;
+
+// Comments
+// C-style block comments.
+// The '-> skip' action tells ANTLR to find these tokens but not pass them on to the parser (or the token stream you'll inspect).
+// This matches the project requirement that comments are not stored or reported in tokens.txt.
+COMMENT: '/*' .*? '*/' -> skip;
 
 // Whitespace
-WHITESPACE : [ \n\r\t\f]+ -> skip;
+// Includes space, tab, carriage return, newline, vertical tab, and form feed.
+// The '-> skip' action also applies here, as whitespace is generally ignored after tokenization.
+WS: [ \t\r\n\u000B\u000C]+ -> skip; // \u000B is Vertical Tab, \u000C is Form Feed
 
-mode COMMENT_OPEN;
-COMMENT_OPEN_SKIP : . -> skip;
+// Note on Error Handling:
+// ANTLR's default behavior for characters that do not match any rule is to create an error token.
+// The specific error types mentioned in your project document, such as "Unmatched comment" for a standalone '*/'
+// or "Invalid number" for a sequence like '123a', have a more nuanced handling in your custom scanner.
+// For example, this ANTLR grammar would tokenize '123a' as NUM (123) followed by ID (a), and '*/' as TIMES (*) followed by DIV (/).
+// Your 'Check()' function, when comparing your scanner's output to ANTLR's, should account for these differences,
+// as ANTLR will primarily report a stream of validly formed tokens according to this grammar.
