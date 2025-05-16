@@ -6,8 +6,8 @@ import os
 import shutil
 import sys
 
-from antlr import check as antlr_check
-from antlr import generate_antlr_grammar, run_antlr, tokenize_with_antlr
+from py_antlr import check as antlr_check
+from py_antlr import generate_antlr_grammar, run_antlr, tokenize_with_antlr
 from scanner import clean_output_files, scan_file
 
 
@@ -120,7 +120,7 @@ Examples:
         
         # Compare outputs
         print_header("COMPARING OUTPUTS")
-        similarity = antlr_check("tokens.txt", "ANTLR_p1")
+        similarity = antlr_check("tokens.txt", "antlr/ANTLR_p1")
         print(f"\nSimilarity: {similarity:.2f}%")
         if similarity > 90.0:
             print("High similarity - Scanner works correctly!")
