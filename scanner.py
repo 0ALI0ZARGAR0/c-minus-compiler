@@ -1,40 +1,25 @@
 #!/usr/bin/env python3
-# C-minus Scanner Implementation - Rewritten
+# C-minus Scanner Implementation - Reformatted (no change in functionality)
 
 import os
 import sys
 from enum import Enum
-
 from loguru import logger
 
-
-# Token types
 class TokenType(Enum):
     KEYWORD = "KEYWORD"
     ID = "ID"
     NUM = "NUM"
     SYMBOL = "SYMBOL"
-    COMMENT = "COMMENT" 
-    WHITESPACE = "WHITESPACE" 
+    COMMENT = "COMMENT"
+    WHITESPACE = "WHITESPACE"
     EOF = "EOF"
     ERROR = "ERROR"
 
-# Keywords in C-minus
-KEYWORDS = [
-    "if", "else", "void", "int", "repeat",
-    "break", "until", "return"
-]
-
-# Symbols in C-minus
-SYMBOLS = [
-    ";", ",", "[", "]", "(", ")", "{", "}", "+",
-    "-", "*", "<", "=", "/", 
-]
-
-# Multi-character symbols 
+KEYWORDS = ["if", "else", "void", "int", "repeat", "break", "until", "return"]
+SYMBOLS = [";", ",", "[", "]", "(", ")", "{", "}", "+", "-", "*", "<", "=", "/"]
 MULTI_CHAR_SYMBOLS = ["==", "<=", ">=", "!="]
 SPLIT_MULTI_CHAR_SYMBOLS = ["+="]
-
 
 class CharacterScanner:
     def __init__(self, input_text):
@@ -47,451 +32,235 @@ class CharacterScanner:
         self.symbol_table = set(KEYWORDS)
         self.symbol_order = []
         self.lexical_errors = []
-        self.current_char = self.input_text[0] if len(self.input_text) > 0 else ''
-        logger.debug(f"Scanner initialized: input_text length={len(input_text)}, initial char='{self.current_char}'")
+        self.current_char = input_text[0] if input_text else ''
 
     def advance(self):
-        """Move to the next character in the input text."""
-        old_pos = self.position
-        old_line = self.line_num
-        old_col = self.column
-        consumed_char = self.current_char
-
         if self.current_char == '\n':
             self.line_num += 1
             self.column = 0
-            logger.debug(f"ADVANCE: Consumed newline at pos {old_pos} (line {old_line}, col {old_col}) -> New line {self.line_num}, col {self.column}")
         else:
             self.column += 1
-            logger.debug(f"ADVANCE: Consumed '{consumed_char}' at pos {old_pos} (line {old_line}, col {old_col}) -> New col {self.column}")
-
         self.position += 1
-        if self.position < len(self.input_text):
-            self.current_char = self.input_text[self.position]
-            logger.debug(f"ADVANCE: Moved to pos {self.position}, new char='{self.current_char}'")
-        else:
-            self.current_char = ''
-            logger.debug(f"ADVANCE: Reached EOF at pos {self.position}")
+        self.current_char = self.input_text[self.position] if self.position < len(self.input_text) else ''
 
     def peek(self, distance=1):
-        """Look ahead without consuming characters."""
         peek_pos = self.position + distance
-        if peek_pos < len(self.input_text):
-            peek_char = self.input_text[peek_pos]
-            logger.debug(f"PEEK: Looking ahead {distance} steps from pos {self.position}, at pos {peek_pos}. Found '{peek_char}'")
-            return peek_char
-        logger.debug(f"PEEK: Looking ahead {distance} steps from pos {self.position}. Reached end of input.")
-        return ''
+        return self.input_text[peek_pos] if peek_pos < len(self.input_text) else ''
 
     def scan(self):
-        """Scan the input text and generate tokens."""
-        logger.debug("Starting scanning process.")
         while self.position < len(self.input_text):
-            logger.debug(f"SCAN loop: Current pos {self.position}, char='{self.current_char}', line {self.line_num}, col {self.column}")
-            
-            # Skip whitespace
             if self.current_char.isspace():
-                logger.debug("SCAN: Found whitespace, skipping.")
                 self.skip_whitespace()
-                continue
-
-            # Handle comments
-            if self.current_char == '/' and self.peek() == '*':
-                logger.debug("SCAN: Found start of multi-line comment '/*'.")
+            elif self.current_char == '/' and self.peek() == '*':
                 self.handle_multi_line_comment()
-                continue
-
-            # Check for identifiers and keywords
-            if self.current_char.isalpha():
-                logger.debug("SCAN: Found start of identifier/keyword.")
+            elif self.current_char.isalpha():
                 self.handle_identifier()
-                continue
-
-            # Check for numbers
-            if self.current_char.isdigit():
-                logger.debug("SCAN: Found start of number.")
+            elif self.current_char.isdigit():
                 self.handle_number()
+            elif self.check_split_multi_char_symbol():
                 continue
-
-            # Check for special split multi-character symbols 
-            if self.check_split_multi_char_symbol():
+            elif self.check_multi_char_symbol():
                 continue
-
-            # Check for regular multi-character symbols
-            if self.check_multi_char_symbol():
+            elif self.check_invalid_symbol_sequence():
                 continue
-
-            # Check for invalid multi-character sequences
-            if self.check_invalid_symbol_sequence():
-                continue
-
-            # Check for single-character symbols
-            if self.current_char in SYMBOLS: 
-                 if self.current_char == '/':
-                     logger.debug(f"SCAN: Found '/', treating as invalid input.")
-                     self.add_error("Invalid input", "/")
-                     self.advance()
-                 else:
-                     logger.debug(f"SCAN: Found single-character symbol '{self.current_char}'.")
-                     self.handle_symbol()
-                 continue
-
-
-            # If we got invalid character
-            logger.debug(f"SCAN: Found invalid character '{self.current_char}'.")
-            self.add_error("Invalid input", self.current_char)
-            self.advance()
-
-        logger.debug("Scanning process finished.")
+            elif self.current_char in SYMBOLS:
+                if self.current_char == '/':
+                    self.add_error("Invalid input", "/")
+                    self.advance()
+                else:
+                    self.handle_symbol()
+            else:
+                self.add_error("Invalid input", self.current_char)
+                self.advance()
 
     def skip_whitespace(self):
-        """Skip whitespace characters."""
-        logger.debug("SKIP_WHITESPACE: Starting.")
-        start_pos = self.position
         while self.position < len(self.input_text) and self.current_char.isspace():
             self.advance()
-        logger.debug(f"SKIP_WHITESPACE: Finished, skipped from pos {start_pos} to {self.position}.")
-
 
     def handle_multi_line_comment(self):
-        """Handle a /* ... */ comment."""
-        logger.debug("HANDLE_MULTI_LINE_COMMENT: Starting.")
         comment_start_line = self.line_num
         comment_text = "/*"
-
-        # Skip the opening /*
         self.advance()
-        self.advance() 
-
-        # Search for the closing */
+        self.advance()
         comment_closed = False
+
         while self.position < len(self.input_text):
             if self.current_char == '*' and self.peek() == '/':
-                self.advance() 
-                self.advance() 
+                self.advance()
+                self.advance()
                 comment_closed = True
-                logger.debug("HANDLE_MULTI_LINE_COMMENT: Found closing '*/'.")
                 break
-
             comment_text += self.current_char
             self.advance()
 
         if not comment_closed:
-            # Unclosed comment error
             display_comment = comment_text[:10] + "..." if len(comment_text) > 10 else comment_text
-            logger.debug(f"HANDLE_MULTI_LINE_COMMENT: Unclosed comment starting at line {comment_start_line}. Text: '{display_comment}'")
             self.add_error("Unclosed comment", display_comment, comment_start_line)
-        else:
-            logger.debug("HANDLE_MULTI_LINE_COMMENT: Successfully handled closed comment.")
-
 
     def handle_identifier(self):
-        """Handle identifiers and keywords."""
-        logger.debug("HANDLE_IDENTIFIER: Starting.")
-        identifier_start_pos = self.position
         identifier = ""
-
-        while (self.position < len(self.input_text) and
-                self.current_char.isalnum()): 
+        while self.position < len(self.input_text) and self.current_char.isalnum():
             identifier += self.current_char
             self.advance()
 
-        logger.debug(f"HANDLE_IDENTIFIER: Raw identifier collected: '{identifier}'")
-
-        if (self.position < len(self.input_text) and
-            not self.current_char.isalnum() and
-            not self.current_char.isspace() and
-            self.current_char not in SYMBOLS and
-            self.check_match_multi_char_symbol(self.current_char + self.peek()) is None and
-            not self.check_match_split_multi_char_symbol(self.current_char + self.peek())):
-
-
-            # Invalid input like 
-            invalid_input = identifier + self.current_char
-            logger.debug(f"HANDLE_IDENTIFIER: Found invalid character immediately after identifier. Invalid input: '{invalid_input}'")
-            self.add_error("Invalid input", invalid_input)
+        if (self.position < len(self.input_text) and not self.current_char.isalnum()
+                and not self.current_char.isspace() and self.current_char not in SYMBOLS
+                and not self.check_match_multi_char_symbol(self.current_char + self.peek())
+                and not self.check_match_split_multi_char_symbol(self.current_char + self.peek())):
+            self.add_error("Invalid input", identifier + self.current_char)
             self.advance()
-
         else:
-            # Add token: keyword or identifier
             if identifier in KEYWORDS:
-                logger.debug(f"HANDLE_IDENTIFIER: Identified as KEYWORD: '{identifier}'")
                 self.add_token(TokenType.KEYWORD, identifier)
-            elif identifier: 
-                logger.debug(f"HANDLE_IDENTIFIER: Identified as ID: '{identifier}'")
+            else:
                 self.add_token(TokenType.ID, identifier)
                 self.symbol_table.add(identifier)
-
                 if identifier not in self.symbol_order and identifier not in KEYWORDS:
                     self.symbol_order.append(identifier)
-            else:
-                logger.debug(f"HANDLE_IDENTIFIER: Identifier started but no characters were collected. Current char: '{self.current_char}'")
-
 
     def handle_number(self):
-        """Handle numeric literals."""
-        logger.debug("HANDLE_NUMBER: Starting.")
-        number_start_pos = self.position
         number = ""
-
-        # Collect all digits
         while self.position < len(self.input_text) and self.current_char.isdigit():
             number += self.current_char
             self.advance()
 
-        logger.debug(f"HANDLE_NUMBER: Raw number collected: '{number}'")
-
-        # Check for invalid numbers
         if self.position < len(self.input_text) and self.current_char.isalpha():
             invalid_number = number + self.current_char
-            logger.debug(f"HANDLE_NUMBER: Found invalid character (letter) immediately after number. Invalid number: '{invalid_number}'")
             self.add_error("Invalid number", invalid_number)
-            self.advance() 
-
+            self.advance()
             remaining_id = ""
-            while (self.position < len(self.input_text) and 
-                  self.current_char.isalnum()):
+            while self.position < len(self.input_text) and self.current_char.isalnum():
                 remaining_id += self.current_char
                 self.advance()
-            
             if remaining_id:
-                logger.debug(f"HANDLE_NUMBER: Extracted remaining identifier '{remaining_id}' after invalid number")
                 self.add_token(TokenType.ID, remaining_id)
                 self.symbol_table.add(remaining_id)
                 if remaining_id not in self.symbol_order and remaining_id not in KEYWORDS:
                     self.symbol_order.append(remaining_id)
-            
-            logger.debug("HANDLE_NUMBER: Finished handling invalid number sequence.")
-            return
-
-        # Valid number
-        if number:
-            logger.debug(f"HANDLE_NUMBER: Identified as NUM: '{number}'")
+        elif number:
             self.add_token(TokenType.NUM, number)
-        else:
-            logger.debug(f"HANDLE_NUMBER: Number started but no digits were collected. Current char: '{self.current_char}'")
-
 
     def check_invalid_symbol_sequence(self):
-        """Check for invalid sequences of symbols that should be reported together."""
-        logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: Starting.")
-        
         if self.current_char == '=' and self.peek() == '#':
-            invalid_seq = self.current_char + self.peek()
-            logger.debug(f"CHECK_INVALID_SYMBOL_SEQUENCE: Found invalid sequence '{invalid_seq}'.")
-            self.add_error("Invalid input", invalid_seq)
-            self.advance() 
-            self.advance() 
-            logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: Consumed invalid sequence.")
+            self.add_error("Invalid input", self.current_char + self.peek())
+            self.advance()
+            self.advance()
             return True
-
-        logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: No invalid sequences found at current position.")
         return False
 
     def check_match_multi_char_symbol(self, sequence):
-        """Helper to check if a given sequence matches any multi-character symbol."""
-        for symbol in MULTI_CHAR_SYMBOLS:
-            if sequence.startswith(symbol):
-                return symbol
-        return None
+        return next((sym for sym in MULTI_CHAR_SYMBOLS if sequence.startswith(sym)), None)
 
     def check_match_split_multi_char_symbol(self, sequence):
-        """Helper to check if a given sequence matches any split multi-character symbol."""
-        for symbol in SPLIT_MULTI_CHAR_SYMBOLS:
-            if sequence.startswith(symbol):
-                return symbol
-        return None
-
+        return next((sym for sym in SPLIT_MULTI_CHAR_SYMBOLS if sequence.startswith(sym)), None)
 
     def check_split_multi_char_symbol(self):
-        """Check and handle multi-character symbols that should be split."""
-        logger.debug("CHECK_SPLIT_MULTI_CHAR_SYMBOL: Starting.")
-        current_and_next = self.current_char + self.peek()
-        matched_symbol = self.check_match_split_multi_char_symbol(current_and_next)
-
-        if matched_symbol:
-            logger.debug(f"CHECK_SPLIT_MULTI_CHAR_SYMBOL: Matched split multi-character symbol '{matched_symbol}'.")
-        
-            if matched_symbol == "+=":
-                self.add_token(TokenType.SYMBOL, "+")
-                self.advance()
-                self.add_token(TokenType.SYMBOL, "=")
-                self.advance()
-                logger.debug("CHECK_SPLIT_MULTI_CHAR_SYMBOL: Handled '+=' as two symbols.")
-                return True
-
-        logger.debug("CHECK_SPLIT_MULTI_CHAR_SYMBOL: No split multi-character symbols found at current position.")
+        combined = self.current_char + self.peek()
+        if self.check_match_split_multi_char_symbol(combined) == "+=":
+            self.add_token(TokenType.SYMBOL, "+")
+            self.advance()
+            self.add_token(TokenType.SYMBOL, "=")
+            self.advance()
+            return True
         return False
-
 
     def check_multi_char_symbol(self):
-        """Check and handle multi-character symbols."""
-        logger.debug("CHECK_MULTI_CHAR_SYMBOL: Starting.")
-        current_and_next = self.current_char + self.peek()
-        matched_symbol = self.check_match_multi_char_symbol(current_and_next)
-
-        if matched_symbol:
-            logger.debug(f"CHECK_MULTI_CHAR_SYMBOL: Matched multi-character symbol '{matched_symbol}'.")
-            self.add_token(TokenType.SYMBOL, matched_symbol)
-            for _ in range(len(matched_symbol)):
+        combined = self.current_char + self.peek()
+        symbol = self.check_match_multi_char_symbol(combined)
+        if symbol:
+            self.add_token(TokenType.SYMBOL, symbol)
+            for _ in symbol:
                 self.advance()
-            logger.debug(f"CHECK_MULTI_CHAR_SYMBOL: Handled multi-character symbol '{matched_symbol}'.")
             return True
-
-        logger.debug("CHECK_MULTI_CHAR_SYMBOL: No multi-character symbols found at current position.")
         return False
 
-
     def handle_symbol(self):
-        """Handle single-character symbols from the SYMBOLS list."""
-        logger.debug("HANDLE_SYMBOL: Starting.")
-
         if self.current_char == '*' and self.peek() == '/':
-            logger.debug("HANDLE_SYMBOL: Found unmatched comment ending '*/'.")
             self.add_error("Unmatched comment", "*/")
-            self.advance()  
-            self.advance()  
-            logger.debug("HANDLE_SYMBOL: Consumed unmatched comment ending.")
-            return
-
-        if self.current_char in SYMBOLS:
-             if self.current_char != '/':
-                logger.debug(f"HANDLE_SYMBOL: Found valid single-character symbol '{self.current_char}'.")
-                self.add_token(TokenType.SYMBOL, self.current_char)
-                self.advance()
-                logger.debug(f"HANDLE_SYMBOL: Handled single-character symbol '{self.current_char}'.")
-                return
-
-        logger.debug(f"HANDLE_SYMBOL: Reached with character '{self.current_char}' not explicitly handled as a single symbol.")
-
+            self.advance()
+            self.advance()
+        elif self.current_char in SYMBOLS and self.current_char != '/':
+            self.add_token(TokenType.SYMBOL, self.current_char)
+            self.advance()
 
     def add_token(self, token_type, lexeme):
-        """Add a token to the tokens list."""
-        logger.debug(f"ADD_TOKEN: Adding token (type={token_type.value}, lexeme='{lexeme}') at line {self.line_num}.")
         if token_type != TokenType.WHITESPACE:
             self.tokens.append((self.line_num, token_type.value, lexeme))
-            logger.debug(f"ADD_TOKEN: Token added: ({self.line_num}, {token_type.value}, '{lexeme}')")
 
     def add_error(self, error_type, lexeme, line=None):
-        """Add a lexical error to the errors list."""
-        error_line = line if line is not None else self.line_num
-        logger.debug(f"ADD_ERROR: Adding error (type='{error_type}', lexeme='{lexeme}') at line {error_line}.")
+        error_line = line if line else self.line_num
         self.lexical_errors.append((error_line, error_type, lexeme))
-        logger.debug(f"ADD_ERROR: Error added: ({error_line}, '{error_type}', '{lexeme}')")
 
     def get_tokens_by_line(self):
-        """Get tokens organized by line number."""
-        logger.debug("GET_TOKENS_BY_LINE: Organizing tokens by line number.")
-        tokens_by_line = {}
+        lines = {}
         for line_num, token_type, lexeme in self.tokens:
-            if line_num not in tokens_by_line:
-                tokens_by_line[line_num] = []
-            tokens_by_line[line_num].append((token_type, lexeme))
-        logger.debug(f"GET_TOKENS_BY_LINE: Organized {len(self.tokens)} tokens into {len(tokens_by_line)} lines.")
-        return tokens_by_line
+            lines.setdefault(line_num, []).append((token_type, lexeme))
+        return lines
 
     def get_errors_by_line(self):
-        """Get lexical errors organized by line number."""
-        logger.debug("GET_ERRORS_BY_LINE: Organizing errors by line number.")
-        errors_by_line = {}
+        lines = {}
         for line_num, error_type, lexeme in self.lexical_errors:
-            if line_num not in errors_by_line:
-                errors_by_line[line_num] = []
-            errors_by_line[line_num].append((error_type, lexeme))
-        logger.debug(f"GET_ERRORS_BY_LINE: Organized {len(self.lexical_errors)} errors into {len(errors_by_line)} lines.")
-        return errors_by_line
+            lines.setdefault(line_num, []).append((error_type, lexeme))
+        return lines
 
     def write_output_files(self):
-        """Write tokens, lexical errors, and symbol table to output files."""
-        logger.debug("WRITE_OUTPUT_FILES: Starting.")
         try:
-            # Write tokens
-            logger.debug("WRITE_OUTPUT_FILES: Writing tokens.txt.")
             with open("tokens.txt", "w") as f:
-                tokens_by_line = self.get_tokens_by_line()
-                for line_num in sorted(tokens_by_line.keys()):
-                    tokens_str = " ".join(f"({token_type}, {lexeme})" for token_type, lexeme in tokens_by_line[line_num])
+                for line_num in sorted(self.get_tokens_by_line()):
+                    tokens = self.get_tokens_by_line()[line_num]
+                    tokens_str = " ".join(f"({t}, {l})" for t, l in tokens)
                     f.write(f"{line_num}.\t{tokens_str} \n")
-            logger.debug("WRITE_OUTPUT_FILES: Finished writing tokens.txt.")
 
-            # Write lexical errors
-            logger.debug("WRITE_OUTPUT_FILES: Writing lexical_errors.txt.")
             with open("lexical_errors.txt", "w") as f:
-                errors_by_line = self.get_errors_by_line()
-                if not errors_by_line:
+                errors = self.get_errors_by_line()
+                if not errors:
                     f.write("There is no lexical error.")
-                    logger.debug("WRITE_OUTPUT_FILES: No lexical errors found, writing default message.")
                 else:
-                    for line_num in sorted(errors_by_line.keys()):
-                        errors_str = " ".join(f"({lexeme}, {error_type})" for error_type, lexeme in errors_by_line[line_num])
+                    for line_num in sorted(errors):
+                        errors_str = " ".join(f"({l}, {e})" for e, l in errors[line_num])
                         f.write(f"{line_num}.\t{errors_str} \n")
-                    logger.debug(f"WRITE_OUTPUT_FILES: Finished writing {len(self.lexical_errors)} errors to lexical_errors.txt.")
 
-            # Write symbol table
-            logger.debug("WRITE_OUTPUT_FILES: Writing symbol_table.txt.")
             with open("symbol_table.txt", "w") as f:
-                all_symbols = []
-                keyword_list_order = ["break", "else", "if", "int", "repeat", "return", "until", "void"]
-                all_symbols.extend([kw for kw in keyword_list_order if kw in self.symbol_table])
-                all_symbols.extend(self.symbol_order)
-
-                for i, symbol in enumerate(all_symbols, 1):
-                    f.write(f"{i}.\t{symbol}\n")
-                logger.debug(f"WRITE_OUTPUT_FILES: Finished writing {len(all_symbols)} symbols to symbol_table.txt.")
+                keyword_order = ["break", "else", "if", "int", "repeat", "return", "until", "void"]
+                all_symbols = [kw for kw in keyword_order if kw in self.symbol_table] + self.symbol_order
+                for idx, symbol in enumerate(all_symbols, 1):
+                    f.write(f"{idx}.\t{symbol}\n")
 
         except Exception as e:
-            logger.error(f"WRITE_OUTPUT_FILES: Error writing output files: {e}", exc_info=True)
+            logger.error(f"Error writing output files: {e}", exc_info=True)
             raise
 
 
 def scan_file(input_file):
-    """Scan a file and generate tokens, errors, and symbol table."""
-    logger.debug(f"SCAN_FILE: Starting scan for file '{input_file}'.")
     try:
         with open(input_file, "r") as f:
             input_text = f.read()
-        logger.debug(f"SCAN_FILE: Successfully read input file '{input_file}'. Content length: {len(input_text)}")
 
-        files_to_clean = ["tokens.txt", "lexical_errors.txt", "symbol_table.txt"]
-        logger.debug(f"SCAN_FILE: Cleaning up previous output files: {files_to_clean}")
-        for file in files_to_clean:
+        for file in ["tokens.txt", "lexical_errors.txt", "symbol_table.txt"]:
             if os.path.exists(file):
                 try:
                     os.remove(file)
-                    logger.debug(f"SCAN_FILE: Removed existing file '{file}'.")
                 except Exception as e:
-                     logger.warning(f"SCAN_FILE: Could not remove existing file '{file}': {e}")
-
+                    logger.warning(f"Could not remove file {file}: {e}")
 
         scanner = CharacterScanner(input_text)
         scanner.scan()
         scanner.write_output_files()
-
-        logger.debug(f"SCAN_FILE: Scanning and writing output complete for '{input_file}'.")
         return True
+
     except FileNotFoundError:
-        logger.error(f"SCAN_FILE: Input file '{input_file}' not found.")
         print(f"Error: Input file '{input_file}' not found.")
         return False
     except Exception as e:
-        logger.error(f"SCAN_FILE: Error during scanning of file '{input_file}': {e}", exc_info=True)
         print(f"Error scanning file: {e}")
         return False
 
-def clean_output_files():
-    """Clean up output files from previous runs."""
-    logger.debug("CLEAN_OUTPUT_FILES: Starting cleanup.")
-    files_to_clean = ["tokens.txt", "lexical_errors.txt", "symbol_table.txt"]
 
-    for file in files_to_clean:
+def clean_output_files():
+    for file in ["tokens.txt", "lexical_errors.txt", "symbol_table.txt"]:
         if os.path.exists(file):
             try:
                 os.remove(file)
                 print(f"Removed {file}")
-                logger.debug(f"CLEAN_OUTPUT_FILES: Removed {file}.")
             except Exception as e:
                 print(f"Failed to remove {file}: {e}")
-                logger.error(f"CLEAN_OUTPUT_FILES: Failed to remove {file}: {e}", exc_info=True)
-        else:
-            logger.debug(f"CLEAN_OUTPUT_FILES: File {file} does not exist, skipping removal.")
-    logger.debug("CLEAN_OUTPUT_FILES: Cleanup finished.")
