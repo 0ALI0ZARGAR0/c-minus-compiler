@@ -14,8 +14,8 @@ class TokenType(Enum):
     ID = "ID"
     NUM = "NUM"
     SYMBOL = "SYMBOL"
-    COMMENT = "COMMENT" # Although comments are skipped, defining it can be useful
-    WHITESPACE = "WHITESPACE" # Although whitespace is skipped
+    COMMENT = "COMMENT" 
+    WHITESPACE = "WHITESPACE" 
     EOF = "EOF"
     ERROR = "ERROR"
 
@@ -26,17 +26,13 @@ KEYWORDS = [
 ]
 
 # Symbols in C-minus
-# Note: Multi-character symbols are handled specifically
 SYMBOLS = [
     ";", ",", "[", "]", "(", ")", "{", "}", "+",
-    "-", "*", "<", "=", "/", # Note: '/' is technically a symbol but treated as error in this scanner
-    # Multi-character symbols are handled separately
+    "-", "*", "<", "=", "/", 
 ]
 
-# Multi-character symbols (handled as single tokens if matched)
+# Multi-character symbols 
 MULTI_CHAR_SYMBOLS = ["==", "<=", ">=", "!="]
-
-# Special case multi-character sequence that is split into two symbols
 SPLIT_MULTI_CHAR_SYMBOLS = ["+="]
 
 
@@ -48,9 +44,7 @@ class CharacterScanner:
         self.line_num = 1
         self.column = 0
         self.tokens = []
-        # Add keywords to symbol table initially
         self.symbol_table = set(KEYWORDS)
-        # Track symbols in order of appearance
         self.symbol_order = []
         self.lexical_errors = []
         self.current_char = self.input_text[0] if len(self.input_text) > 0 else ''
@@ -94,6 +88,7 @@ class CharacterScanner:
         logger.debug("Starting scanning process.")
         while self.position < len(self.input_text):
             logger.debug(f"SCAN loop: Current pos {self.position}, char='{self.current_char}', line {self.line_num}, col {self.column}")
+            
             # Skip whitespace
             if self.current_char.isspace():
                 logger.debug("SCAN: Found whitespace, skipping.")
@@ -118,21 +113,20 @@ class CharacterScanner:
                 self.handle_number()
                 continue
 
-            # Check for special split multi-character symbols (like +=)
+            # Check for special split multi-character symbols 
             if self.check_split_multi_char_symbol():
                 continue
 
-            # Check for regular multi-character symbols (like ==, <=, >=, !=)
+            # Check for regular multi-character symbols
             if self.check_multi_char_symbol():
                 continue
 
-            # Check for invalid multi-character sequences that need special reporting
+            # Check for invalid multi-character sequences
             if self.check_invalid_symbol_sequence():
                 continue
 
             # Check for single-character symbols
-            if self.current_char in SYMBOLS: # Use SYMBOLS list for single chars
-                 # Special handling for '/' as per the original code's behavior
+            if self.current_char in SYMBOLS: 
                  if self.current_char == '/':
                      logger.debug(f"SCAN: Found '/', treating as invalid input.")
                      self.add_error("Invalid input", "/")
@@ -143,14 +137,12 @@ class CharacterScanner:
                  continue
 
 
-            # If we get here, we have an invalid character
+            # If we got invalid character
             logger.debug(f"SCAN: Found invalid character '{self.current_char}'.")
             self.add_error("Invalid input", self.current_char)
             self.advance()
 
         logger.debug("Scanning process finished.")
-        # Add EOF token at the very end (optional, but good practice for parsers)
-        # self.add_token(TokenType.EOF, "EOF") # Add EOF token if needed later
 
     def skip_whitespace(self):
         """Skip whitespace characters."""
@@ -168,15 +160,15 @@ class CharacterScanner:
         comment_text = "/*"
 
         # Skip the opening /*
-        self.advance()  # Skip /
-        self.advance()  # Skip *
+        self.advance()
+        self.advance() 
 
         # Search for the closing */
         comment_closed = False
         while self.position < len(self.input_text):
             if self.current_char == '*' and self.peek() == '/':
-                self.advance()  # Skip *
-                self.advance()  # Skip /
+                self.advance() 
+                self.advance() 
                 comment_closed = True
                 logger.debug("HANDLE_MULTI_LINE_COMMENT: Found closing '*/'.")
                 break
@@ -200,39 +192,36 @@ class CharacterScanner:
         identifier = ""
 
         while (self.position < len(self.input_text) and
-                self.current_char.isalnum()): # Allow digits in identifiers after the first char
+                self.current_char.isalnum()): 
             identifier += self.current_char
             self.advance()
 
         logger.debug(f"HANDLE_IDENTIFIER: Raw identifier collected: '{identifier}'")
 
-        # Check if there's an invalid character immediately following a valid identifier
-        # and it's not a symbol or whitespace that would terminate the identifier correctly.
         if (self.position < len(self.input_text) and
             not self.current_char.isalnum() and
             not self.current_char.isspace() and
             self.current_char not in SYMBOLS and
-            self.check_match_multi_char_symbol(self.current_char + self.peek()) is None and # Check if it's the start of a multi-char symbol
-            not self.check_match_split_multi_char_symbol(self.current_char + self.peek())): # Check if it's the start of a split multi-char symbol
+            self.check_match_multi_char_symbol(self.current_char + self.peek()) is None and
+            not self.check_match_split_multi_char_symbol(self.current_char + self.peek())):
 
 
-            # Invalid input like "re%peat"
+            # Invalid input like 
             invalid_input = identifier + self.current_char
             logger.debug(f"HANDLE_IDENTIFIER: Found invalid character immediately after identifier. Invalid input: '{invalid_input}'")
             self.add_error("Invalid input", invalid_input)
-            self.advance() # Consume the invalid character
-            # Note: The rest of the invalid sequence will be handled by the main scan loop or subsequent checks
+            self.advance()
 
         else:
-            # Add token based on whether it's a keyword or identifier
+            # Add token: keyword or identifier
             if identifier in KEYWORDS:
                 logger.debug(f"HANDLE_IDENTIFIER: Identified as KEYWORD: '{identifier}'")
                 self.add_token(TokenType.KEYWORD, identifier)
-            elif identifier: # Ensure identifier is not empty (shouldn't happen with initial check)
+            elif identifier: 
                 logger.debug(f"HANDLE_IDENTIFIER: Identified as ID: '{identifier}'")
                 self.add_token(TokenType.ID, identifier)
                 self.symbol_table.add(identifier)
-                # Track order of appearance (only if not already in the list)
+
                 if identifier not in self.symbol_order and identifier not in KEYWORDS:
                     self.symbol_order.append(identifier)
             else:
@@ -252,28 +241,23 @@ class CharacterScanner:
 
         logger.debug(f"HANDLE_NUMBER: Raw number collected: '{number}'")
 
-        # Check for invalid number (with letters immediately after)
+        # Check for invalid numbers
         if self.position < len(self.input_text) and self.current_char.isalpha():
-            # Only report number + first letter as error
             invalid_number = number + self.current_char
             logger.debug(f"HANDLE_NUMBER: Found invalid character (letter) immediately after number. Invalid number: '{invalid_number}'")
             self.add_error("Invalid number", invalid_number)
-            self.advance() # Consume the first letter
+            self.advance() 
 
-            # Extract the remaining part as a potential identifier
             remaining_id = ""
             while (self.position < len(self.input_text) and 
                   self.current_char.isalnum()):
                 remaining_id += self.current_char
                 self.advance()
             
-            # If we extracted a valid identifier, add it to symbols
             if remaining_id:
                 logger.debug(f"HANDLE_NUMBER: Extracted remaining identifier '{remaining_id}' after invalid number")
-                # Add the remaining part as an identifier to symbol table
                 self.add_token(TokenType.ID, remaining_id)
                 self.symbol_table.add(remaining_id)
-                # Track order of appearance
                 if remaining_id not in self.symbol_order and remaining_id not in KEYWORDS:
                     self.symbol_order.append(remaining_id)
             
@@ -281,7 +265,7 @@ class CharacterScanner:
             return
 
         # Valid number
-        if number: # Ensure number is not empty (shouldn't happen with initial check)
+        if number:
             logger.debug(f"HANDLE_NUMBER: Identified as NUM: '{number}'")
             self.add_token(TokenType.NUM, number)
         else:
@@ -291,26 +275,15 @@ class CharacterScanner:
     def check_invalid_symbol_sequence(self):
         """Check for invalid sequences of symbols that should be reported together."""
         logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: Starting.")
-        # Special case: =# as one error
+        
         if self.current_char == '=' and self.peek() == '#':
             invalid_seq = self.current_char + self.peek()
             logger.debug(f"CHECK_INVALID_SYMBOL_SEQUENCE: Found invalid sequence '{invalid_seq}'.")
             self.add_error("Invalid input", invalid_seq)
-            self.advance()  # consume '='
-            self.advance()  # consume '#'
+            self.advance() 
+            self.advance() 
             logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: Consumed invalid sequence.")
             return True
-
-        # Add more cases if needed for other specific symbol combinations
-        # Example: handling "**" if it's invalid and needs specific reporting
-        # if self.current_char == '*' and self.peek() == '*':
-        #     invalid_seq = self.current_char + self.peek()
-        #     logger.debug(f"CHECK_INVALID_SYMBOL_SEQUENCE: Found invalid sequence '{invalid_seq}'.")
-        #     self.add_error("Invalid input", invalid_seq)
-        #     self.advance() # consume first '*'
-        #     self.advance() # consume second '*'
-        #     logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: Consumed invalid sequence.")
-        #     return True
 
         logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: No invalid sequences found at current position.")
         return False
@@ -338,8 +311,7 @@ class CharacterScanner:
 
         if matched_symbol:
             logger.debug(f"CHECK_SPLIT_MULTI_CHAR_SYMBOL: Matched split multi-character symbol '{matched_symbol}'.")
-            # Handle += as two separate symbols
-            # This assumes the split is always into the constituent parts
+        
             if matched_symbol == "+=":
                 self.add_token(TokenType.SYMBOL, "+")
                 self.advance()
@@ -347,10 +319,6 @@ class CharacterScanner:
                 self.advance()
                 logger.debug("CHECK_SPLIT_MULTI_CHAR_SYMBOL: Handled '+=' as two symbols.")
                 return True
-
-            # Add more split multi-char symbol cases here if needed
-            # elif matched_symbol == "...":
-            #     pass # handle similarly
 
         logger.debug("CHECK_SPLIT_MULTI_CHAR_SYMBOL: No split multi-character symbols found at current position.")
         return False
@@ -364,7 +332,6 @@ class CharacterScanner:
 
         if matched_symbol:
             logger.debug(f"CHECK_MULTI_CHAR_SYMBOL: Matched multi-character symbol '{matched_symbol}'.")
-            # Add the multi-character symbol as a single token
             self.add_token(TokenType.SYMBOL, matched_symbol)
             for _ in range(len(matched_symbol)):
                 self.advance()
@@ -379,24 +346,15 @@ class CharacterScanner:
         """Handle single-character symbols from the SYMBOLS list."""
         logger.debug("HANDLE_SYMBOL: Starting.")
 
-        # This check for */ might be redundant if handle_multi_line_comment is called first,
-        # but keeping it as per original code's logic. It signifies an unmatched closing comment.
         if self.current_char == '*' and self.peek() == '/':
             logger.debug("HANDLE_SYMBOL: Found unmatched comment ending '*/'.")
             self.add_error("Unmatched comment", "*/")
-            self.advance()  # Skip *
-            self.advance()  # Skip /
+            self.advance()  
+            self.advance()  
             logger.debug("HANDLE_SYMBOL: Consumed unmatched comment ending.")
             return
 
-        # Handling of '/' is explicitly done in the main scan loop
-        # as per the original code's behavior of treating it as invalid.
-        # If '/' should be a valid symbol, it would be handled here.
-        # The current logic treats it as an "Invalid input" error in the main scan loop.
-
-        # Handle other valid single symbol from the SYMBOLS list
         if self.current_char in SYMBOLS:
-             # Exclude '/' since it's handled as error in scan loop
              if self.current_char != '/':
                 logger.debug(f"HANDLE_SYMBOL: Found valid single-character symbol '{self.current_char}'.")
                 self.add_token(TokenType.SYMBOL, self.current_char)
@@ -404,18 +362,12 @@ class CharacterScanner:
                 logger.debug(f"HANDLE_SYMBOL: Handled single-character symbol '{self.current_char}'.")
                 return
 
-        # If we reach here, it means a character was passed to handle_symbol
-        # but it wasn't a recognised single symbol or the special */ case.
-        # This indicates a potential logic error or an unexpected character
-        # reached this point. The main scan loop should ideally catch this.
-        # However, adding a debug log here for robustness.
         logger.debug(f"HANDLE_SYMBOL: Reached with character '{self.current_char}' not explicitly handled as a single symbol.")
 
 
     def add_token(self, token_type, lexeme):
         """Add a token to the tokens list."""
         logger.debug(f"ADD_TOKEN: Adding token (type={token_type.value}, lexeme='{lexeme}') at line {self.line_num}.")
-        # The original code skips whitespace tokens, adhering to that.
         if token_type != TokenType.WHITESPACE:
             self.tokens.append((self.line_num, token_type.value, lexeme))
             logger.debug(f"ADD_TOKEN: Token added: ({self.line_num}, {token_type.value}, '{lexeme}')")
@@ -453,7 +405,7 @@ class CharacterScanner:
         """Write tokens, lexical errors, and symbol table to output files."""
         logger.debug("WRITE_OUTPUT_FILES: Starting.")
         try:
-            # Write tokens to file
+            # Write tokens
             logger.debug("WRITE_OUTPUT_FILES: Writing tokens.txt.")
             with open("tokens.txt", "w") as f:
                 tokens_by_line = self.get_tokens_by_line()
@@ -462,7 +414,7 @@ class CharacterScanner:
                     f.write(f"{line_num}.\t{tokens_str} \n")
             logger.debug("WRITE_OUTPUT_FILES: Finished writing tokens.txt.")
 
-            # Write lexical errors to file
+            # Write lexical errors
             logger.debug("WRITE_OUTPUT_FILES: Writing lexical_errors.txt.")
             with open("lexical_errors.txt", "w") as f:
                 errors_by_line = self.get_errors_by_line()
@@ -475,28 +427,21 @@ class CharacterScanner:
                         f.write(f"{line_num}.\t{errors_str} \n")
                     logger.debug(f"WRITE_OUTPUT_FILES: Finished writing {len(self.lexical_errors)} errors to lexical_errors.txt.")
 
-
-            # Write symbol table to file
+            # Write symbol table
             logger.debug("WRITE_OUTPUT_FILES: Writing symbol_table.txt.")
             with open("symbol_table.txt", "w") as f:
-                # Sort keywords first, then identifiers
                 all_symbols = []
-
-                # Add keywords in fixed order as specified
                 keyword_list_order = ["break", "else", "if", "int", "repeat", "return", "until", "void"]
                 all_symbols.extend([kw for kw in keyword_list_order if kw in self.symbol_table])
-
-                # Add identifiers in order of appearance
                 all_symbols.extend(self.symbol_order)
 
-                # Output all symbols
                 for i, symbol in enumerate(all_symbols, 1):
                     f.write(f"{i}.\t{symbol}\n")
                 logger.debug(f"WRITE_OUTPUT_FILES: Finished writing {len(all_symbols)} symbols to symbol_table.txt.")
 
         except Exception as e:
             logger.error(f"WRITE_OUTPUT_FILES: Error writing output files: {e}", exc_info=True)
-            raise # Re-raise the exception after logging
+            raise
 
 
 def scan_file(input_file):
@@ -507,7 +452,6 @@ def scan_file(input_file):
             input_text = f.read()
         logger.debug(f"SCAN_FILE: Successfully read input file '{input_file}'. Content length: {len(input_text)}")
 
-        # Clear previous results
         files_to_clean = ["tokens.txt", "lexical_errors.txt", "symbol_table.txt"]
         logger.debug(f"SCAN_FILE: Cleaning up previous output files: {files_to_clean}")
         for file in files_to_clean:
@@ -532,8 +476,6 @@ def scan_file(input_file):
     except Exception as e:
         logger.error(f"SCAN_FILE: Error during scanning of file '{input_file}': {e}", exc_info=True)
         print(f"Error scanning file: {e}")
-        # import traceback # Already imported if needed for print_exc
-        # traceback.print_exc() # Loguru's exc_info=True handles this
         return False
 
 def clean_output_files():
