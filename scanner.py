@@ -280,8 +280,8 @@ class CharacterScanner:
             invalid_seq = self.current_char + self.peek()
             logger.debug(f"CHECK_INVALID_SYMBOL_SEQUENCE: Found invalid sequence '{invalid_seq}'.")
             self.add_error("Invalid input", invalid_seq)
-            self.advance()  # consume '='
-            self.advance()  # consume '#'
+            self.advance() 
+            self.advance() 
             logger.debug("CHECK_INVALID_SYMBOL_SEQUENCE: Consumed invalid sequence.")
             return True
 
