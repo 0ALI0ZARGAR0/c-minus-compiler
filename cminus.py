@@ -62,25 +62,23 @@ Examples:
     
     args = parser.parse_args()
     
-    # Clean output files if requested
+    # Output cleanning
     if args.clean:
         print_header("CLEANING FILES")
         clean_output_files()
         clean_antlr_output()
         return 0
     
-    # Create test file if requested
+    # Creating test file 
     if args.test:
         print_header("RUNNING TEST")
         from scanner import create_test_file
         args.input_file = create_test_file()
     
-    # Check if input file exists
     if not os.path.exists(args.input_file):
         print(f"Error: Input file '{args.input_file}' not found.")
         return 1
     
-    # Run the scanner
     print_header("RUNNING SCANNER")
     print(f"Input file: {args.input_file}")
     scanner_success = scan_file(args.input_file)
@@ -89,28 +87,27 @@ Examples:
         print("Scanner encountered errors.")
         return 1
     
-    # Display scanner results
+    # Displaying scanner results
     print("\nScanner completed successfully.")
     print("Generated output files:")
     print("  - tokens.txt")
     print("  - lexical_errors.txt")
     print("  - symbol_table.txt")
     
-    # Run ANTLR comparison if requested
+    # Run ANTLR comparison
     if args.antlr:
         
         print_header("RUNNING ANTLR")
         
-        # Generate grammar file
+        # Generating grammar file
         grammar_file = generate_antlr_grammar()
         print(f"Generated grammar file: {grammar_file}")
         
-        # Run ANTLR
         if not run_antlr(grammar_file):
             print("ANTLR processing failed.")
             return 1
         
-        # Tokenize with ANTLR
+        # Tokenizing with ANTLR
         print(f"Tokenizing {args.input_file} with ANTLR...")
         antlr_tokens = tokenize_with_antlr(args.input_file)
         
@@ -118,7 +115,7 @@ Examples:
             print("ANTLR tokenization failed.")
             return 1
         
-        # Compare outputs
+        # Comparing outputs
         print_header("COMPARING OUTPUTS")
         similarity = antlr_check("tokens.txt", "ANTLR_p1")
         print(f"\nSimilarity: {similarity:.2f}%")
@@ -127,7 +124,6 @@ Examples:
         else:
             print("Low similarity - Scanner may need improvements.")
     
-    # Clean up test file if created
     if args.test:
         try:
             os.unlink(args.input_file)
@@ -135,7 +131,7 @@ Examples:
         except Exception as e:
             print(f"\nWarning: Failed to delete temporary test file: {e}")
     
-    # Display tokens if verbose mode or test mode
+    # Displaying tokens
     if args.verbose or args.test:
         print_header("TOKEN OUTPUT")
         try:
