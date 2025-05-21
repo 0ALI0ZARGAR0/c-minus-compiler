@@ -4,7 +4,9 @@
 import os
 import sys
 from enum import Enum
+
 from loguru import logger
+
 
 class TokenType(Enum):
     KEYWORD = "KEYWORD"
