@@ -125,18 +125,11 @@ class CharacterScanner:
             self.advance()
 
         if self.position < len(self.input_text) and self.current_char.isalpha():
-            invalid_number = number + self.current_char
-            self.add_error("Invalid number", invalid_number)
-            self.advance()
-            remaining_id = ""
+            invalid_number = number
             while self.position < len(self.input_text) and self.current_char.isalnum():
-                remaining_id += self.current_char
+                invalid_number += self.current_char
                 self.advance()
-            if remaining_id:
-                self.add_token(TokenType.ID, remaining_id)
-                self.symbol_table.add(remaining_id)
-                if remaining_id not in self.symbol_order and remaining_id not in KEYWORDS:
-                    self.symbol_order.append(remaining_id)
+            self.add_error("Invalid number", invalid_number)
         elif number:
             self.add_token(TokenType.NUM, number)
 
