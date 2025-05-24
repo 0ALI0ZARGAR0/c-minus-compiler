@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# C-minus Scanner Implementation - Reformatted (no change in functionality)
-
 import os
 import sys
 from enum import Enum
