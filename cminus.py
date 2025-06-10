@@ -1,195 +1,80 @@
 #!/usr/bin/env python3
-# C-minus Compiler Entry Point
 
 import argparse
 import os
-import shutil
 import sys
-
-from py_antlr import check as antlr_check
-from py_antlr import generate_antlr_grammar, run_antlr, tokenize_with_antlr
-from scanner import clean_output_files, scan_file, CharacterScanner
-from parser import Parser
-
-
-def print_header(title):
-    """Print a formatted header."""
-    print("\n" + "=" * 60)
-    print(f" {title}")
-    print("=" * 60)
-
-
-def clean_antlr_output():
-    """Clean up ANTLR output files."""
-    files_to_clean = ["antlr/ANTLR_p1"]
-    for file in files_to_clean:
-        if os.path.exists(file):
-            try:
-                os.remove(file)
-                print(f"Removed {file}")
-            except Exception as e:
-                print(f"Failed to remove {file}: {e}")
-
-
-def run_parser(input_file):
-    """Run the predictive parser on the token stream."""
-    print_header("RUNNING PARSER")
-    try:
-        with open(input_file, "r") as f:
-            input_text = f.read()
-
-        scanner = CharacterScanner(input_text)
-        scanner.scan()
-        tokens = scanner.tokens
-
-        parser = Parser(tokens)
-        parser.parse_program()
-        parser.write_outputs()
-
-        print("Parser completed successfully.")
-        print("Generated output files:")
-        print("  - parse_tree.txt")
-        print("  - syntax_errors.txt")
-
-    except Exception as e:
-        print(f"Parser failed: {e}")
-        return False
-
-    return True
 
 
 def main():
-    """Main entry point for the C-minus compiler."""
-    parser = argparse.ArgumentParser(
-        description='C-minus Compiler',
+    parser_arg = argparse.ArgumentParser(
+        description="C-minus Compiler with robust parsing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  cminus.py input.txt              # Run the scanner and parser on input.txt
-  cminus.py input.txt --antlr     # Also run ANTLR tokenization and compare
-  cminus.py --test                # Run built-in test
-  cminus.py --clean               # Clean all output files
-"""
+  %(prog)s input.txt                    # Compile input.txt
+  %(prog)s input.txt --verbose          # Compile with detailed output
+  %(prog)s --help                       # Show this help message
+        """
     )
-
-    parser.add_argument('input_file', nargs='?', default='input.txt',
-                        help='Input file to process (default: input.txt)')
-
-    parser.add_argument('--antlr', action='store_true',
-                        help='Also run ANTLR tokenization and compare results')
-
-    parser.add_argument('--test', action='store_true',
-                        help='Run with built-in test code')
-
-    parser.add_argument('--clean', action='store_true',
-                        help='Clean output files before processing')
-
-    parser.add_argument('--verbose', action='store_true',
-                        help='Show more detailed output')
-
-    args = parser.parse_args()
-
-    # Clean all outputs
-    if args.clean:
-        print_header("CLEANING FILES")
-        clean_output_files()
-        clean_antlr_output()
-        return 0
-
-    # Test mode
-    if args.test:
-        print_header("RUNNING TEST")
-        from scanner import create_test_file
-        args.input_file = create_test_file()
-
-    if not os.path.exists(args.input_file):
-        print(f"Error: Input file '{args.input_file}' not found.")
+    
+    parser_arg.add_argument(
+        'input_file',
+        help='C-minus source file to compile'
+    )
+    
+    parser_arg.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Show detailed compilation output'
+    )
+    
+    # Parse arguments
+    if len(sys.argv) == 1:
+        parser_arg.print_help()
         return 1
-
-    print_header("RUNNING SCANNER")
-    print(f"Input file: {args.input_file}")
-    scanner_success = scan_file(args.input_file)
-
-    if not scanner_success:
-        print("Scanner encountered errors.")
+        
+    args = parser_arg.parse_args()
+    
+    # Validate input file
+    if not os.path.isfile(args.input_file):
+        print(f"Error: Input file '{args.input_file}' not found")
         return 1
-
-    print("\nScanner completed successfully.")
-    print("Generated output files:")
-    print("  - tokens.txt")
-    print("  - lexical_errors.txt")
-    print("  - symbol_table.txt")
-
-    # Run parser
-    parser_success = run_parser(args.input_file)
-    if not parser_success:
+    
+    # Create input.txt for the old project (it expects this specific filename)
+    import shutil
+    shutil.copy2(args.input_file, "input.txt")
+    
+    try:
+        # Now run the old project's compiler logic directly
+        from old_project_wrapper import run_compiler
+        success = run_compiler(args.verbose)
+        
+        if success:
+            print(f"✓ Compilation completed successfully")
+            print(f"\nGenerated files in output/ directory:")
+            if os.path.exists("output/tokens.txt"):
+                print("  - output/tokens.txt")
+            if os.path.exists("output/symbol_table.txt"):
+                print("  - output/symbol_table.txt") 
+            if os.path.exists("output/parse_tree.txt"):
+                print("  - output/parse_tree.txt")
+            if os.path.exists("output/syntax_errors.txt"):
+                print("  - output/syntax_errors.txt")
+            if os.path.exists("output/semantic_errors.txt"):
+                print("  - output/semantic_errors.txt")
+            if os.path.exists("output/output.txt"):
+                print("  - output/output.txt")
+        
+        return 0 if success else 1
+        
+    except Exception as e:
+        print(f"Compilation failed: {e}")
         return 1
-
-    # Run ANTLR comparison
-    if args.antlr:
-        print_header("RUNNING ANTLR")
-        grammar_file = generate_antlr_grammar()
-        print(f"Generated grammar file: {grammar_file}")
-
-        if not run_antlr(grammar_file):
-            print("ANTLR processing failed.")
-            return 1
-
-        print(f"Tokenizing {args.input_file} with ANTLR...")
-        antlr_tokens = tokenize_with_antlr(args.input_file)
-
-        if not antlr_tokens:
-            print("ANTLR tokenization failed.")
-            return 1
-
-        print_header("COMPARING OUTPUTS")
-        similarity = antlr_check("tokens.txt", "antlr/ANTLR_p1")
-        print(f"\nSimilarity: {similarity:.2f}%")
-        if similarity > 90.0:
-            print("High similarity - Scanner works correctly!")
-        else:
-            print("Low similarity - Scanner may need improvements.")
-
-    # Clean up test file
-    if args.test:
-        try:
-            os.unlink(args.input_file)
-            print(f"\nDeleted temporary test file: {args.input_file}")
-        except Exception as e:
-            print(f"\nWarning: Failed to delete temporary test file: {e}")
-
-    # Display output files
-    if args.verbose or args.test:
-        try:
-            print_header("TOKEN OUTPUT")
-            with open("tokens.txt", "r") as f:
-                print(f.read())
-
-            print_header("LEXICAL ERRORS")
-            with open("lexical_errors.txt", "r") as f:
-                print(f.read())
-
-            print_header("SYMBOL TABLE")
-            with open("symbol_table.txt", "r") as f:
-                print(f.read())
-
-            print_header("PARSE TREE")
-            with open("parse_tree.txt", "r") as f:
-                print(f.read())
-
-            print_header("SYNTAX ERRORS")
-            with open("syntax_errors.txt", "r") as f:
-                print(f.read())
-
-        except Exception as e:
-            print(f"Error reading output files: {e}")
-
-    return 0
+    finally:
+        # Clean up
+        if os.path.exists("input.txt"):
+            os.remove("input.txt")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
-
-# Removed: run_parser('input.txt')
-
-run_parser('input.txt')
+    sys.exit(main()) 
