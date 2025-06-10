@@ -1,6 +1,6 @@
 import re
 
-from DFA.DFA import get_final_token, get_token_type, get_next_state
+from DFA.DFA import get_final_token, get_next_state, get_token_type
 from DFA.states import STATE_SCANNER
 from Tools.regex import RE
 
@@ -24,7 +24,6 @@ class scanner:
             "break",
             "until",
             "return",
-            "endif",
         ]
         self.line = 1
         self.addition_str = "\n  "  # has to begin with \n and be longer than 1

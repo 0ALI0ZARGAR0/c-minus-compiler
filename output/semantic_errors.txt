@@ -1,1 +1,1 @@
-#9 : Semantic Error! 'fun' is not defined.
+The input program is semantically correct.

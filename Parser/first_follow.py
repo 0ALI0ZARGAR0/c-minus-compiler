@@ -28,7 +28,7 @@ first = {
     "Statement": {"{", ";", "break", "if", "output", "repeat", "return", "ID", "(", "NUM"},
     "Expression-stmt": {";", "break", "ID", "(", "NUM"},
     "Selection-stmt": {"if", "output"},
-    "Else-stmt": {"else", "endif"},
+    "Else-stmt": {"else", ""},
     "Iteration-stmt": {"repeat"},
     "Return-stmt": {"return"},
     "Return-stmt-prime": {";", "ID", "(", "NUM"},
@@ -157,7 +157,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Statement-list": {"}"},
@@ -173,7 +173,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Expression-stmt": {
@@ -188,7 +188,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Selection-stmt": {
@@ -203,7 +203,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Else-stmt": {
@@ -218,7 +218,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Iteration-stmt": {
@@ -233,7 +233,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Return-stmt": {
@@ -248,7 +248,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Return-stmt-prime": {
@@ -263,7 +263,7 @@ follow = {
         "NUM",
         "}",
         "else",
-        "endif",
+        
         "until",
     },
     "Expression": {";", ")", "]", ","},

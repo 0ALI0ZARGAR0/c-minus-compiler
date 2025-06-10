@@ -1,1 +1,12 @@
-The output code has not been generated
+0	(ASSIGN, #4008, 4004, )
+1	(ASSIGN, #8008, 8004, )
+2	(JP, 3, , )
+3	(ASSIGN, #0, 104, )
+4	(ASSIGN, #0, 108, )
+5	(ADD, 104, 108, 1504)
+6	(ASSIGN, 1504, 104, )
+7	(ASSIGN, #0, @8004, )
+8	(ADD, 8004, #4, 8004)
+9	(SUB, 8004, #8, 1508)
+10	(ASSIGN, @1508, 1512, )
+11	(JP, @1512, , )

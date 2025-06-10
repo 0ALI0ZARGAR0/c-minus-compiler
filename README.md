@@ -1,141 +1,71 @@
 # C-minus Compiler
 
-A Python implementation of a lexical analyzer (scanner) for the C-minus programming language, with optional ANTLR integration for validation.
-
-## Features
-
-- Lexical analysis of C-minus source code
-- Comprehensive error detection and reporting
-- Symbol table generation
-- Optional ANTLR integration for validation
-- Built-in test functionality
-- Detailed token and error output
-
-## Project Structure
-
-```
-.
-├── cminus.py          # Main entry point script
-├── scanner.py         # Lexical analyzer implementation
-├── py_antlr.py        # ANTLR integration module
-└── antlr/            # Directory for ANTLR-generated files
-```
-
-## Requirements
-
-- Python 3.6+
-- For ANTLR integration (optional):
-  - Java Runtime Environment (JRE)
-  - ANTLR4 JAR file
-  - Python ANTLR4 runtime (`pip install antlr4-python3-runtime`)
-
-## Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/c-minus-compiler.git
-cd c-minus-compiler
-```
-
-2. Install Python dependencies:
-
-```bash
-pip install loguru antlr4-python3-runtime
-```
-
-3. Make the scripts executable:
-
-```bash
-chmod +x cminus.py
-```
+A complete C-minus language compiler with lexical analysis, syntax parsing, and semantic analysis.
 
 ## Usage
 
-### Basic Usage
-
 ```bash
-# Run the scanner on input.txt (default input file)
-./cminus.py
-
-# Run the scanner on a specific input file
-./cminus.py my_program.txt
-
-# Run with built-in test code
-./cminus.py --test
-
-# Run with verbose output (displays all tokens)
-./cminus.py input.txt --verbose
+python compiler.py input_file.c [--verbose]
 ```
 
-### ANTLR Integration
+**Examples:**
 
 ```bash
-# Run scanner and ANTLR comparison
-./cminus.py input.txt --antlr
+# Basic compilation
+python compiler.py Testcases1/T01/input.txt
 
-# Clean output files before processing
-./cminus.py --clean
+# Verbose output with detailed analysis
+python compiler.py Testcases2-pr/T1/input.txt --verbose
 ```
 
 ## Output Files
 
-The scanner generates the following output files:
+The compiler generates organized output in `output/` directory:
 
-- `tokens.txt` - List of tokens identified in the input file
-- `lexical_errors.txt` - List of lexical errors found
-- `symbol_table.txt` - Table of identifiers found
+- `tokens.txt` - Tokenization results
+- `symbol_table.txt` - Symbol table
+- `parse_tree.txt` - Parse tree structure
+- `syntax_errors.txt` - Syntax error report
+- `semantic_errors.txt` - Semantic error report
+- `output.txt` - Generated intermediate code
 
-When using ANTLR comparison, additional files will be generated in the `antlr/` directory.
+## Project Structure
 
-## C-minus Language
+**Core Files:**
 
-C-minus is a simplified subset of C with the following features:
+- `compiler.py` - Main compiler (single file)
+- `old_scanner.py` - DFA-based scanner implementation
 
-### Lexical Structure
+**Engine Components:**
 
-- **Keywords**: `if`, `else`, `void`, `int`, `repeat`, `break`, `until`, `return`
-- **Identifiers**: Start with a letter, followed by any number of letters or digits
-- **Numbers**: Sequences of digits
-- **Symbols**: `;`, `,`, `[`, `]`, `(`, `)`, `{`, `}`, `+`, `-`, `*`, `/`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `=`
-- **Comments**: Block comments between `/*` and `*/` and line comments starting with `//`
+- `Parser/` - DFA-based parser implementation
+- `SemanticLevel/` - Semantic analysis and code generation
+- `DFA/` - Deterministic Finite Automaton components
+- `Tools/` - Utility functions and development tools
 
-### Error Handling
+**Test Cases:**
 
-The scanner detects the following types of errors:
+- `Testcases1/` - Original test cases
+- `Testcases2/` - Additional test cases
+- `Testcases2-pr/` - Project test cases
 
-- Invalid numbers (e.g., `123abc`)
-- Unclosed comments
-- Invalid input characters
-- Invalid symbol sequences
+## Features
 
-## Scanner Implementation
+✅ Complete lexical analysis with DFA-based tokenization  
+✅ Robust LL(1) syntax parsing with error recovery  
+✅ Comprehensive semantic analysis  
+✅ Type checking and scope management  
+✅ Intermediate code generation  
+✅ Detailed error reporting with line numbers  
+✅ Clean, organized output files
 
-The scanner uses a state machine approach to tokenize input:
+## C-minus Language Support
 
-1. It reads the input file character by character
-2. Based on the current state and character, it transitions to appropriate states
-3. When a complete token is identified, it's added to the token list
-4. Detected errors are recorded separately
-5. The scanner outputs tokens, errors, and the symbol table to separate files
+The compiler supports the complete C-minus language specification including:
 
-## ANTLR Integration
-
-The project includes optional ANTLR integration for validation:
-
-1. Generates an ANTLR grammar file based on the C-minus language specification
-2. Runs the ANTLR tokenizer on the input file
-3. Compares the scanner output with ANTLR output
-4. Reports similarity percentage between the two implementations
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- Variable declarations (`int`, `void`)
+- Array declarations and access
+- Function declarations and calls
+- Control structures (`if`, `else`, `while`, `return`) - **Standard C syntax, no `endif` required!**
+- Arithmetic and comparison operations
+- Proper scoping and type checking

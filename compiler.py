@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+
 """
-Wrapper module for the old project's compiler logic
-This integrates the old project's robust parsing into our new framework
+C-minus Compiler
+A complete C-minus language compiler with lexical analysis, syntax parsing, and semantic analysis.
+Consolidated single-file implementation.
 """
 
 import os
+import shutil
 import sys
 
 
@@ -14,7 +18,7 @@ def file2str(filepath):
 
 
 def save_tuple2file_based_on_1element(file_name, tl):
-    """Save tokens grouped by line number"""
+    """Save tokens to file grouped by line number"""
     os.makedirs("output", exist_ok=True)
     with open(os.path.join("output", file_name), mode="w") as f:
         this_el = -1
@@ -92,135 +96,155 @@ def pp_list_of_tuples(lsot):
         f.write(s)
 
 
-def run_compiler(verbose=False):
+def compile_file(input_file, verbose=False):
     """
-    Main compiler function that integrates the old project's logic
+    Main compiler function
     """
     try:
-        # Import the old project components
+        # Import compiler components
         from old_scanner import scanner
         from Parser import parser
         from SemanticLevel import ErrorType
         from SemanticLevel.SemanticRoutines import program_block
         from Tools import Development
 
-        # Temporarily disable develop_mode to reduce clutter in console
-        original_develop_mode = Development.develop_mode
-        Development.develop_mode = False  # Disable console semantic trace for cleaner display
-        
-        # Also need to disable it in the Semantic module
-        from SemanticLevel import Semantic
-
-        # Patch the Semantic class to not print traces
-        original_semantic_init = Semantic.Semantic.__init__
-        original_semantic_run = Semantic.Semantic.run
-        
-        def clean_semantic_init(self, pars_table):
-            # Initialize without printing the header
-            self.parse_table = pars_table
-            self.temp_manager = Semantic.TempManager(1500, 4)
-            Semantic.semantic_instance = self
-        
-        def clean_semantic_run(self, func_name, input_token):
-            # Run without printing traces
-            from SemanticLevel import SemanticRoutines
-            func_name = func_name[1:len(func_name)]
-            getattr(SemanticRoutines, "func_" +
-                    func_name)(self.temp_manager.get_temp, input_token)
-        
-        # Apply patches for clean output
+        # Clean semantic stack traces for prettier output
         if not verbose:
+            # Temporarily disable develop_mode to reduce clutter
+            original_develop_mode = Development.develop_mode
+            Development.develop_mode = False
+            
+            # Patch semantic output for cleaner display
+            from SemanticLevel import Semantic
+            original_semantic_init = Semantic.Semantic.__init__
+            original_semantic_run = Semantic.Semantic.run
+            
+            def clean_semantic_init(self, pars_table):
+                self.parse_table = pars_table
+                self.temp_manager = Semantic.TempManager(1500, 4)
+                Semantic.semantic_instance = self
+            
+            def clean_semantic_run(self, func_name, input_token):
+                from SemanticLevel import SemanticRoutines
+                func_name = func_name[1:len(func_name)]
+                getattr(SemanticRoutines, "func_" +
+                        func_name)(self.temp_manager.get_temp, input_token)
+            
             Semantic.Semantic.__init__ = clean_semantic_init
             Semantic.Semantic.run = clean_semantic_run
 
-        # Read the input file (old project expects input.txt)
-        addr = "input.txt"
-        s = file2str(addr)
+        if verbose:
+            print("🔧 C-MINUS COMPILER")
+            print("-" * 40)
+            print(f"   Input file: {input_file}")
+            print()
+
+        # Read the input file
+        s = file2str(input_file)
         
         # Initialize scanner
         scnr = scanner(s=s)
         
+        if verbose:
+            print("🔍 COMPILATION PROCESS:")
+            print("-" * 40)
+
+        token_count = 0
         # Process tokens through parser
         while True:
             line, next_token_type, next_token = scnr.get_next_token()
             ErrorType.gl_line_number = line
+            
             if next_token_type is None:
                 parser.get_next_token("$", line)
                 break
             else:
-                parser.get_next_token(
-                    (str(next_token_type), str(next_token)), line)
+                parser.get_next_token((str(next_token_type), str(next_token)), line)
+                token_count += 1
+                if verbose and token_count <= 5:
+                    print(f"   Token {token_count:3}: Line {line:2} | {next_token_type:8} | '{next_token}'")
+                elif verbose and token_count == 6:
+                    print(f"   ... (processing {token_count}+ tokens)")
 
-        # Generate output files (always generate for better debugging)
+        # Generate output files
         save_tuple2file_based_on_1element("tokens.txt", scnr.tokens)
         save_list2file("symbol_table.txt", scnr.lexemes)
         save_tree("parse_tree.txt")
-            
         save_syntax_errors("syntax_errors.txt")
         save_semantic_errors("semantic_errors.txt")
         pp_list_of_tuples(program_block)
 
-        # Show results if verbose
+        # Show results
         if verbose:
-            print("\n" + "="*60)
-            print("                    COMPILATION RESULTS")
-            print("="*60)
-            
-            # Show syntax errors
-            syntax_errors = parser.get_pars_errors()
-            print("\n🔍 SYNTAX ANALYSIS:")
-            print("-" * 40)
-            if syntax_errors:
-                print(f"❌ Found {len(syntax_errors)} syntax error(s):")
+            print(f"   Total tokens processed: {token_count}")
+            print()
+
+        print("📊 COMPILATION RESULTS:")
+        print("-" * 40)
+        
+        # Show syntax errors
+        syntax_errors = parser.get_pars_errors()
+        if syntax_errors:
+            print(f"❌ Syntax: {len(syntax_errors)} error(s) found")
+            if verbose:
                 for error in syntax_errors:
                     print(f"   • {error}")
-            else:
-                print("✅ No syntax errors found")
-                
-            # Show parse tree
-            print("\n🌳 PARSE TREE:")
-            print("-" * 40)
-            try:
-                tree = parser.draw_tree()
-                if tree and len(tree.strip()) > 0:
-                    # Show first few lines of parse tree
-                    tree_lines = tree.split('\n')
-                    if len(tree_lines) > 20:
-                        for line in tree_lines[:15]:
-                            print(f"   {line}")
-                        print(f"   ... ({len(tree_lines)-15} more lines)")
-                        print(f"   📄 Full parse tree saved to: output/parse_tree.txt")
-                    else:
-                        for line in tree_lines:
-                            if line.strip():
-                                print(f"   {line}")
-                else:
-                    print("   ⚠️  Parse tree generation failed")
-            except Exception as e:
-                print(f"   ❌ Error generating parse tree: {e}")
-                
-            # Show semantic errors  
-            print("\n🧠 SEMANTIC ANALYSIS:")
-            print("-" * 40)
-            if ErrorType.semantic_errors:
-                print(f"❌ Found {len(ErrorType.semantic_errors)} semantic error(s):")
+        else:
+            print("✅ Syntax: No errors")
+            
+        # Show semantic errors  
+        if ErrorType.semantic_errors:
+            print(f"❌ Semantic: {len(ErrorType.semantic_errors)} error(s) found")
+            if verbose:
                 for error in ErrorType.semantic_errors:
                     print(f"   • {error}")
-            else:
-                print("✅ No semantic errors found")
-                
-            print("\n" + "="*60)
+        else:
+            print("✅ Semantic: No errors")
+            
+        print(f"📁 Output: Generated in output/ directory")
         
-        # Restore original develop_mode and semantic methods
-        Development.develop_mode = original_develop_mode
+        # Restore original settings
         if not verbose:
+            Development.develop_mode = original_develop_mode
             Semantic.Semantic.__init__ = original_semantic_init
             Semantic.Semantic.run = original_semantic_run
         
         return True
         
     except Exception as e:
-        print(f"Compiler error: {e}")
-        import traceback
-        traceback.print_exc()
-        return False 
+        print(f"❌ Compilation failed: {e}")
+        if verbose:
+            import traceback
+            traceback.print_exc()
+        return False
+
+
+def main():
+    """Main entry point"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="C-minus Compiler")
+    parser.add_argument("input_file", help="Input C-minus file to compile")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    
+    args = parser.parse_args()
+    
+    if not os.path.exists(args.input_file):
+        print(f"❌ Error: Input file '{args.input_file}' not found")
+        return 1
+    
+    # Copy input file to input.txt (required by compiler components)
+    if args.input_file != "input.txt":
+        shutil.copy2(args.input_file, "input.txt")
+    
+    success = compile_file("input.txt", args.verbose)
+    
+    if success:
+        print("✓ Compilation completed")
+        return 0
+    else:
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main()) 
