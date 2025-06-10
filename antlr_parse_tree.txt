@@ -1,0 +1,57 @@
+(program 
+  (declaration_list 
+    (declaration 
+      (declaration_initial 
+        (type_specifier void)
+        main)
+      
+      (declaration_prime 
+        (fun_declaration_prime 
+          ( 
+            (params void)
+            )
+          
+          (compound_stmt { 
+            (declaration_list 
+              (declaration 
+                (declaration_initial 
+                  (type_specifier int)
+                  a)
+                
+                (declaration_prime 
+                  (var_declaration_prime ;)))
+              
+              (declaration_list 
+                (declaration 
+                  (declaration_initial 
+                    (type_specifier int)
+                    b)
+                  
+                  (declaration_prime 
+                    (var_declaration_prime ;)))
+                declaration_list))
+            
+            (statement_list 
+              (statement 
+                (expression_stmt 
+                  (expression a 
+                    (b = 
+                      (expression a 
+                        (b 
+                          (simple_expression_prime 
+                            (additive_expression_prime 
+                              (term_prime factor_prime g)
+                              
+                              (d 
+                                (addop +)
+                                
+                                (term 
+                                  (factor b 
+                                    (var_call_prime var_prime))
+                                  g)
+                                d))
+                            c)))))
+                  ;))
+              statement_list)
+            }))))
+    declaration_list))

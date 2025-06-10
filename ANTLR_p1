@@ -1,14 +1,6 @@
-2.	(VOID, void) (ID, main) (LPAREN, () (VOID, void) (RPAREN, )) (LBRACE, {) 
-3.	(INT, int) (ID, prod) (SEMI, ;) 
-4.	(INT, int) (ID, i) (SEMI, ;) 
-5.	(ID, prod) (ASSIGN, =) (NUM, 1) (SEMI, ;) 
-6.	(ID, i) (ASSIGN, =) (NUM, 1) (SEMI, ;) 
-7.	(REPEAT, repeat) (LBRACE, {) 
-8.	(ID, prod) (ASSIGN, =) (ID, i) (TIMES, *) (ID, prod) (SEMI, ;) 
-9.	(ID, i) (ASSIGN, =) (ID, i) (PLUS, +) (NUM, 2) (SEMI, ;) 
-10.	(RBRACE, }) (UNTIL, until) (LPAREN, () (ID, i) (LESS, <) (LESS, <) (NUM, 7) (RPAREN, )) 
-11.	(ID, output) (LPAREN, () (ID, prod) (RPAREN, )) (SEMI, ;) 
-12.	(RETURN, return) (SEMI, ;) 
-13.	
-14.	
-15.	(RBRACE, }) 
+2.	
+3.	(VOID, void) (ID, main) (LPAREN, () (VOID, void) (RPAREN, )) (LBRACE, {) 
+4.	(INT, int) (ID, a) (SEMI, ;) 
+5.	(INT, int) (ID, b) (SEMI, ;) 
+6.	(ID, a) (ASSIGN, =) (ID, a) (PLUS, +) (ID, b) (SEMI, ;) 
+7.	(RBRACE, }) 

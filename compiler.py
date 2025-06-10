@@ -219,6 +219,23 @@ def compile_file(input_file, verbose=False):
         return False
 
 
+def run_antlr_analysis(input_file):
+    """Run ANTLR analysis if py_antlr.py is available."""
+    try:
+        from py_antlr import compare_with_our_compiler, run_full_antlr_analysis
+        print("\n🔧 RUNNING ANTLR ANALYSIS")
+        print("="*60)
+        success = run_full_antlr_analysis(input_file)
+        if success:
+            compare_with_our_compiler(input_file)
+        return success
+    except ImportError:
+        print("⚠️  ANTLR analysis not available (py_antlr.py not found)")
+        return False
+    except Exception as e:
+        print(f"❌ ANTLR analysis failed: {e}")
+        return False
+
 def main():
     """Main entry point"""
     import argparse
@@ -226,6 +243,7 @@ def main():
     parser = argparse.ArgumentParser(description="C-minus Compiler")
     parser.add_argument("input_file", help="Input C-minus file to compile")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--antlr", action="store_true", help="Run ANTLR comparison analysis")
     
     args = parser.parse_args()
     
@@ -238,6 +256,10 @@ def main():
         shutil.copy2(args.input_file, "input.txt")
     
     success = compile_file("input.txt", args.verbose)
+    
+    # Optional ANTLR analysis
+    if args.antlr:
+        run_antlr_analysis(args.input_file)
     
     if success:
         print("✓ Compilation completed")

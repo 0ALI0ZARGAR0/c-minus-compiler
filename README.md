@@ -5,7 +5,7 @@ A complete C-minus language compiler with lexical analysis, syntax parsing, and 
 ## Usage
 
 ```bash
-python compiler.py input_file.c [--verbose]
+python compiler.py input_file.c [--verbose] [--antlr]
 ```
 
 **Examples:**
@@ -16,6 +16,15 @@ python compiler.py Testcases1/T01/input.txt
 
 # Verbose output with detailed analysis
 python compiler.py Testcases2-pr/T1/input.txt --verbose
+
+# Include ANTLR parse tree comparison
+python compiler.py input.c --antlr --verbose
+
+# Standalone ANTLR analysis
+python py_antlr.py input.c              # Full analysis with parse tree
+python py_antlr.py input.c --compare    # Compare with our compiler
+python py_antlr.py input.c --tokens-only # Only tokenization
+python py_antlr.py input.c --tree-only   # Only parse tree generation
 ```
 
 ## Output Files
@@ -35,6 +44,7 @@ The compiler generates organized output in `output/` directory:
 
 - `compiler.py` - Main compiler (single file)
 - `old_scanner.py` - DFA-based scanner implementation
+- `py_antlr.py` - ANTLR integration for parse tree comparison
 
 **Engine Components:**
 
@@ -57,7 +67,8 @@ The compiler generates organized output in `output/` directory:
 ✅ Type checking and scope management  
 ✅ Intermediate code generation  
 ✅ Detailed error reporting with line numbers  
-✅ Clean, organized output files
+✅ Clean, organized output files  
+✅ **ANTLR integration with parse tree comparison**
 
 ## C-minus Language Support
 
