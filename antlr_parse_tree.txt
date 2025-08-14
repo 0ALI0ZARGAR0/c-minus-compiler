@@ -2,56 +2,27 @@
   (declaration_list 
     (declaration 
       (declaration_initial 
-        (type_specifier void)
+        (type_specifier int)
         main)
       
       (declaration_prime 
         (fun_declaration_prime 
-          ( 
-            (params void)
-            )
+          ( params )
           
-          (compound_stmt { 
-            (declaration_list 
-              (declaration 
-                (declaration_initial 
-                  (type_specifier int)
-                  a)
-                
-                (declaration_prime 
-                  (var_declaration_prime ;)))
-              
-              (declaration_list 
-                (declaration 
-                  (declaration_initial 
-                    (type_specifier int)
-                    b)
-                  
-                  (declaration_prime 
-                    (var_declaration_prime ;)))
-                declaration_list))
-            
+          (compound_stmt { declaration_list 
             (statement_list 
               (statement 
-                (expression_stmt 
-                  (expression a 
-                    (b = 
-                      (expression a 
-                        (b 
-                          (simple_expression_prime 
-                            (additive_expression_prime 
-                              (term_prime factor_prime g)
-                              
-                              (d 
-                                (addop +)
-                                
-                                (term 
-                                  (factor b 
-                                    (var_call_prime var_prime))
-                                  g)
-                                d))
-                            c)))))
-                  ;))
+                (return_stmt return 
+                  (return_stmt_prime 
+                    (expression 
+                      (simple_expression_zegond 
+                        (additive_expression_zegond 
+                          (term_zegond 
+                            (factor_zegond 0)
+                            g)
+                          d)
+                        c))
+                    ;)))
               statement_list)
             }))))
     declaration_list))

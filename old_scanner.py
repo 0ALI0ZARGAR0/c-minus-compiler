@@ -23,6 +23,7 @@ class scanner:
             "repeat",
             "break",
             "until",
+            "while",
             "return",
         ]
         self.line = 1

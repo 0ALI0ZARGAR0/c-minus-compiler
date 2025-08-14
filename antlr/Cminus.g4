@@ -39,7 +39,7 @@ selection_stmt: IF '(' expression ')' statement else_stmt;
 
 else_stmt: | ELSE statement;
 
-iteration_stmt: REPEAT statement UNTIL '(' expression ')';
+iteration_stmt: REPEAT statement UNTIL '(' expression ')' | WHILE '(' expression ')' statement;
 
 return_stmt: RETURN return_stmt_prime;
 
@@ -99,6 +99,7 @@ ELSE: 'else';
 VOID: 'void';
 INT: 'int';
 REPEAT: 'repeat';
+WHILE: 'while';
 BREAK: 'break';
 UNTIL: 'until';
 RETURN: 'return';

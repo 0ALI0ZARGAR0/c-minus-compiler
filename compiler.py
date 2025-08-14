@@ -45,6 +45,29 @@ def save_list2file(file_name, l):
             f.write(t + "\n")
 
 
+def save_symbol_table(addr):
+    """Save the symbol table into output/symbol_table.txt in a readable form."""
+    from SemanticLevel.SymbolTable import SymbolTableClass
+    st = SymbolTableClass.get_instance()
+    os.makedirs("output", exist_ok=True)
+    lines = []
+    for row in st.pars_table:
+        parts = [
+            f"addr={row.address}",
+            f"lexeme={row.lexeme}",
+            f"type={row.type}",
+            f"scope={row.scope}",
+            f"category={row.category}",
+        ]
+        if getattr(row, "is_arr", False):
+            parts.append(f"len={row.args_cells}")
+        lines.append(" ".join(parts))
+    with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+        for i, line in enumerate(lines):
+            f.write("{0:4}".format(str(i + 1) + "."))
+            f.write(line + "\n")
+
+
 def save_tree(addr):
     """Save parse tree to file"""
     from Parser import parser
@@ -86,14 +109,18 @@ def pp_list_of_tuples(lsot):
     """Pretty print intermediate code"""
     from SemanticLevel import ErrorType
     os.makedirs("output", exist_ok=True)
-    with open(os.path.join("output", "output.txt"), "w") as f:
-        s = ""
-        if ErrorType.semantic_errors:
-            s = "The output code has not been generated"
-        else:
-            for idx, t in enumerate(lsot):
-                s += f"{idx}\t{t}\n"
-        f.write(s)
+    s = ""
+    if ErrorType.semantic_errors:
+        s = "The output code has not been generated"
+    else:
+        for idx, t in enumerate(lsot):
+            s += f"{idx}\t{t}\n"
+
+    # Write where the Tester expects and also in our organized folder
+    with open("output.txt", "w") as f_root:
+        f_root.write(s)
+    with open(os.path.join("output", "output.txt"), "w") as f_dir:
+        f_dir.write(s)
 
 
 def compile_file(input_file, verbose=False):
@@ -168,7 +195,7 @@ def compile_file(input_file, verbose=False):
 
         # Generate output files
         save_tuple2file_based_on_1element("tokens.txt", scnr.tokens)
-        save_list2file("symbol_table.txt", scnr.lexemes)
+        save_symbol_table("symbol_table.txt")
         save_tree("parse_tree.txt")
         save_syntax_errors("syntax_errors.txt")
         save_semantic_errors("semantic_errors.txt")
@@ -244,6 +271,7 @@ def main():
     parser.add_argument("input_file", help="Input C-minus file to compile")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--antlr", action="store_true", help="Run ANTLR comparison analysis")
+    parser.add_argument("--phase3-mandatory", action="store_true", help="Enable Phase 3 mandatory subset (no function calls/returns)")
     
     args = parser.parse_args()
     
@@ -252,9 +280,16 @@ def main():
         return 1
     
     # Copy input file to input.txt (required by compiler components)
-    if args.input_file != "input.txt":
+    if os.path.abspath(args.input_file) != os.path.abspath("input.txt"):
         shutil.copy2(args.input_file, "input.txt")
     
+    # Configure Phase 3 mandatory behavior before compilation
+    try:
+        from Tools import Development as DevCfg
+        DevCfg.phase3_mandatory = args.phase3_mandatory
+    except Exception:
+        pass
+
     success = compile_file("input.txt", args.verbose)
     
     # Optional ANTLR analysis

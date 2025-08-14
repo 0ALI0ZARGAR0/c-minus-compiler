@@ -32,7 +32,7 @@ python py_antlr.py input.c --tree-only   # Only parse tree generation
 The compiler generates organized output in `output/` directory:
 
 - `tokens.txt` - Tokenization results
-- `symbol_table.txt` - Symbol table
+- `symbol_table.txt` - Symbol table (from compiler's semantic symbol table)
 - `parse_tree.txt` - Parse tree structure
 - `syntax_errors.txt` - Syntax error report
 - `semantic_errors.txt` - Semantic error report
@@ -77,6 +77,6 @@ The compiler supports the complete C-minus language specification including:
 - Variable declarations (`int`, `void`)
 - Array declarations and access
 - Function declarations and calls
-- Control structures (`if`, `else`, `while`, `return`) - **Standard C syntax, no `endif` required!**
+- Control structures (`if`, `else`, `repeat ... until`, `return`) - **Standard C syntax, no `endif` required!**
 - Arithmetic and comparison operations
 - Proper scoping and type checking

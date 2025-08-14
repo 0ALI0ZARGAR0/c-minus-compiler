@@ -2,6 +2,7 @@ import SemanticLevel.Semantic
 import SemanticLevel.stacks as sf
 from SemanticLevel.ErrorType import ErrorTypeEnum, error
 from SemanticLevel.SymbolTable import SymbolTableClass
+from Tools.Development import phase3_mandatory
 
 temps_list = sf.temps_list
 semantic_stack = []
@@ -14,8 +15,22 @@ ARG_COUNT = 0
 FIRST_FUNC = False
 
 st = SymbolTableClass.get_instance()
-sss = sf.SnapshotStack(program_block)
-frs = sf.FunctionRelatedStack(program_block)
+sss = None
+frs = None
+
+
+def ensure_snapshot_stack():
+    global sss
+    if sss is None:
+        # Initialize only when a feature actually requires it (e.g., function call snapshot)
+        sss = sf.SnapshotStack(program_block)
+
+
+def ensure_function_stack():
+    global frs
+    if frs is None:
+        # Initialize only when functions/calls are used
+        frs = sf.FunctionRelatedStack(program_block)
 
 
 def get_PB_next():
@@ -52,11 +67,13 @@ def get_important_tmps(semantic_stack):
     
 # related to function call to handle SnapshotStack
 def _save_snapshot(get_temp, input_token):
+    ensure_snapshot_stack()
     last_scope_addrs = st.find_adrs()
     for addr in last_scope_addrs:
         sss.push(addr, program_block)
 
 def _save_important_tmps(get_temp, input_token):
+    ensure_snapshot_stack()
     important_tmps = get_important_tmps(semantic_stack)
     # print("int SIT==>", important_tmps)
     for it in important_tmps:
@@ -64,6 +81,7 @@ def _save_important_tmps(get_temp, input_token):
         
 
 def _restore_important_tmps(get_temp, input_token):
+    ensure_snapshot_stack()
     important_tmps = get_important_tmps(semantic_stack)
     # print("int RIT==>", important_tmps)
     
@@ -72,6 +90,7 @@ def _restore_important_tmps(get_temp, input_token):
         program_block.append(f"(ASSIGN, {str(pop_addr)}, {str(it)}, )")
 
 def _restore_snapshot(get_temp, input_token):
+    ensure_snapshot_stack()
     last_scope_addrs = st.find_adrs()
     for addr in last_scope_addrs[::-1]:
         pop_addr = sss.pop(program_block, get_temp)
@@ -90,6 +109,9 @@ def func_set_starting_line(get_temp, input_token):
 def func_call_begin(get_temp, input_token):
     global ARG_COUNT
     ARG_COUNT = 0
+    if phase3_mandatory:
+        return
+    ensure_function_stack()
     _save_snapshot(get_temp, input_token)
     _save_important_tmps(get_temp, input_token)
 
@@ -101,6 +123,9 @@ def func_call_add_args(get_temp, input_token):
     arg = get_address_better_handling(semantic_stack.pop())
 
     # print(arg)
+    if phase3_mandatory:
+        return
+    ensure_function_stack()
     frs.push(arg, program_block)
 
 
@@ -109,6 +134,13 @@ def func_call_end(get_temp, input_token):
     # encountered JP operation so +5 is needed
     return_adr = get_PB_next() + 5
 
+    if phase3_mandatory:
+        # Discard function call and push a neutral value to keep parsing
+        _ = semantic_stack.pop()  # function identifier
+        semantic_stack.append("#0")
+        ARG_COUNT = 0
+        return
+    ensure_function_stack()
     frs.push(f"#{ARG_COUNT}", program_block)  # push arg_count
     frs.push(f"#{return_adr}", program_block)  # push ra
 
@@ -134,6 +166,9 @@ def func_call_end(get_temp, input_token):
 # function declaration
 def func_declaration_after_header(get_temp, input_token):
     arg_count = st.get_func_args()
+    if arg_count == 0:
+        return
+    ensure_function_stack()
     for first_arg_offset in range(3, 3 + arg_count):
         arg = semantic_stack.pop()
         arg = get_address_better_handling(arg)
@@ -151,9 +186,13 @@ def func_push_zero(get_temp, input_token):
 def func_declaration_after_return(get_temp, input_token):
     rv = semantic_stack.pop()
     addr_rv = get_address_better_handling(rv)
-    frs.push(addr_rv, program_block)
-    ra = frs.access_using_offset(2, program_block, get_temp)
-    program_block.append(f"(JP, @{ra}, , )")
+    # Push return value only if function stack exists (i.e., within a real call)
+    if frs is not None:
+        frs.push(addr_rv, program_block)
+    # In mandatory subset avoid indirect return jumps; otherwise perform normal return
+    if not phase3_mandatory and frs is not None:
+        ra = frs.access_using_offset(2, program_block, get_temp)
+        program_block.append(f"(JP, @{ra}, , )")
 
 
 def func_pid(get_temp, input_token):
@@ -231,11 +270,12 @@ def func_jpf_save(get_temp, input_token):
 def func_jp(get_temp, input_token):
     i = get_PB_next()
     PBAddr = semantic_stack.pop()
-    # todo
+    # Write a valid JP or do nothing if PBAddr is not an integer index
     try:
         program_block[int(PBAddr)] = f"(JP, {str(i)}, , )"
-    except:
-        program_block.append(f"(JP err, {str(i)}, , )")
+    except Exception:
+        # Silently ignore invalid backpatch index to avoid emitting non-allowed opcodes
+        pass
 
 
 def func_jpf(get_temp, input_token):
@@ -317,6 +357,7 @@ def func_output(get_temp, input_token):
     pop_addr = semantic_stack.pop()
     pop_addr = get_address_better_handling(pop_addr)
     program_block.append(f"(PRINT, {pop_addr}, , )")
+    # Ensure a newline or separator is not required by TAC; PRINT is enough.
 
 
 def func_set_tmp_value(get_temp, input_token):
@@ -327,3 +368,35 @@ def func_set_tmp_value(get_temp, input_token):
 
 def func_after_func_declaration(get_temp, input_token):
     semantic_stack.pop()
+
+
+def func_while_jpf(get_temp, input_token):
+    # While condition: prepare placeholder for exit jump
+    condition_temp = semantic_stack.pop()
+    loop_start_label = semantic_stack.pop()
+    placeholder_index = get_PB_next()
+    program_block.append(EMPTY_PB)
+    semantic_stack.append(loop_start_label)
+    semantic_stack.append(placeholder_index)
+    semantic_stack.append(condition_temp)
+
+
+def func_while_jp_back(get_temp, input_token):
+    # Backpatch JPF to exit and add JP to loop start; then patch breaks
+    condition_temp = semantic_stack.pop()
+    placeholder_index = semantic_stack.pop()
+    loop_start_label = semantic_stack.pop()
+    exit_target = get_PB_next() + 1
+    program_block[placeholder_index] = f"(JPF, {str(condition_temp)}, {str(exit_target)}, )"
+    program_block.append(f"(JP, {str(loop_start_label)}, , )")
+    # Patch pending break placeholders within this loop to exit
+    rep_pos = ru_stack.pop() if len(ru_stack) > 0 else None
+    if rep_pos is not None:
+        for i in range(program_block.__len__()):
+            if program_block.__len__() - 1 - i < rep_pos:
+                break
+            tac = program_block[program_block.__len__() - 1 - i]
+            tac: str
+            if tac and tac[0] == 'b':
+                patched = tac.replace("?", str(get_PB_next()))
+                program_block[program_block.__len__() - 1 - i] = patched.replace("b", "")

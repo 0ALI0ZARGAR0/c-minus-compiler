@@ -1,6 +1,1 @@
-2.	
-3.	(VOID, void) (ID, main) (LPAREN, () (VOID, void) (RPAREN, )) (LBRACE, {) 
-4.	(INT, int) (ID, a) (SEMI, ;) 
-5.	(INT, int) (ID, b) (SEMI, ;) 
-6.	(ID, a) (ASSIGN, =) (ID, a) (PLUS, +) (ID, b) (SEMI, ;) 
-7.	(RBRACE, }) 
+1.	(INT, int) (ID, main) (LPAREN, () (RPAREN, )) (LBRACE, {) (RETURN, return) (NUM, 0) (SEMI, ;) (RBRACE, }) 

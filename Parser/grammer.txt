@@ -16,7 +16,7 @@ Statement -> Expression-stmt | Compound-stmt | Selection-stmt | Iteration-stmt |
 Expression-stmt -> Expression ; #pop | #break break ; | ;
 Selection-stmt -> if ( Expression ) #save Statement Else-stmt
 Else-stmt -> #jpf | else #jpf_save Statement #jp
-Iteration-stmt -> repeat #label Statement until ( Expression ) #until
+Iteration-stmt -> repeat #label Statement until ( Expression ) #until | while #label ( Expression ) #while_jpf Statement #while_jp_back
 Return-stmt -> return Return-stmt-prime 
 Return-stmt-prime -> #push_zero #declaration_after_return ; | Expression #declaration_after_return ;
 Expression -> Simple-expression-zegond | #pid ID B
