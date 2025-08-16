@@ -2,6 +2,7 @@ import SemanticLevel.ErrorType
 import SemanticLevel.SymbolTable
 from SemanticLevel import ErrorType, SemanticRoutines
 from SemanticLevel.ErrorType import ErrorTypeEnum
+from SemanticLevel.SymbolTable import SymbolTableClass
 from Tools.Development import develop_mode
 
 semantic_instance = None
@@ -21,9 +22,14 @@ class TempManager:
     def get_instance():
         return temp_instance
 
-    def __init__(self, current_temp, increase_amount):
+    def __init__(self, current_temp=None, increase_amount=4):
         global temp_instance
-        self.current_temp = current_temp
+        # Always start temps at the next available variable address
+        from SemanticLevel.SymbolTable import SymbolTableClass
+        if current_temp is None:
+            self.current_temp = SymbolTableClass.next_var_addr
+        else:
+            self.current_temp = current_temp
         self.increase_amount = increase_amount
         temp_instance = self
 

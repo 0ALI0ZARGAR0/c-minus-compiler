@@ -1,13 +1,14 @@
-from SemanticLevel.ErrorType import ErrorTypeEnum
-from SemanticLevel.ErrorType import error
+from SemanticLevel.ErrorType import ErrorTypeEnum, error
 
-last_adr = 100
+last_adr = 508  # Start arrays at 508 as per project requirements
 symbol_table_instance = None
 
 
 class SymbolTableClass:
     scope_stack = []
     pars_table = []
+    next_var_addr = 528  # Start variables at 528
+    next_arr_addr = 508  # Start arrays at 508
 
     @staticmethod
     def get_instance():
@@ -18,8 +19,14 @@ class SymbolTableClass:
 
     def add(self, row):
         global last_adr
-        row.address = last_adr
-        last_adr += 4
+        # Determine if this is an array or a variable
+        if hasattr(row, 'is_arr') and getattr(row, 'is_arr', False):
+            # Allocate array at next_arr_addr, but do NOT increment here
+            row.address = SymbolTableClass.next_arr_addr
+        else:
+            # Allocate variable at next_var_addr
+            row.address = SymbolTableClass.next_var_addr
+            SymbolTableClass.next_var_addr += 4
         self.pars_table.append(row)
         # can handle zero input count function?? amir
         if row.category == "param":
@@ -38,10 +45,13 @@ class SymbolTableClass:
 
     def set_last_args(self, args, arr_temp):
         global last_adr
-        self.pars_table[self.pars_table.__len__() - 1].args_cells = args
-        self.pars_table[self.pars_table.__len__() - 1].is_arr = True
-        self.pars_table[self.pars_table.__len__() -
-                        1].temp_start_pos = arr_temp
+        # Update array address to reserve a block for the array
+        arr_row = self.pars_table[self.pars_table.__len__() - 1]
+        arr_row.args_cells = args
+        arr_row.is_arr = True
+        arr_row.temp_start_pos = arr_row.address  # base address is the array's address
+        # Reserve space for the array
+        SymbolTableClass.next_arr_addr += 4 * args
 
     def set_line_category(self, line, c):
         for row in self.pars_table:
@@ -86,6 +96,13 @@ class SymbolTableClass:
         arr_tmp_start = self.pars_table[self.pars_table.__len__(
         ) - 1].temp_start_pos
         return arr_tmp_start, arr_addr
+
+    def get_arr_base_address(self, arr_id):
+        """Get the actual base address (temp_start_pos) of an array by its variable address"""
+        for i in range(self.pars_table.__len__()):
+            if self.pars_table[self.pars_table.__len__() - 1 - i].address == int(arr_id):
+                return self.pars_table[self.pars_table.__len__() - 1 - i].temp_start_pos
+        return arr_id  # fallback to original if not found
 
     def set_starting_line(self, line):
         self.pars_table[self.pars_table.__len__() - 1].starting_line = line

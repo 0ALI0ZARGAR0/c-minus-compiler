@@ -319,13 +319,17 @@ def func_parr(get_temp, input_token):
     arr_index = str(semantic_stack.pop())
     arr_id = str(semantic_stack.pop())
 
-    # semantic_stack.append(arr_index)
+    # Always get the array's base address (temp_start_pos) from symbol table
+    arr_base_addr = st.get_arr_base_address(arr_id)
+
+    # Compute offset: arr_index * WORD_SIZE
     semantic_stack.append(f"{arr_index}")
     semantic_stack.append(f"#{WORD_SIZE}")
     func_mult_op(get_temp, None)
 
+    # Add base address: base + offset
     semantic_stack.append("+")
-    semantic_stack.append(f"{arr_id}")
+    semantic_stack.append(f"#{arr_base_addr}")
     func_add_op(get_temp, None, address_mode=True)
 
 
@@ -334,8 +338,7 @@ def func_pop(get_temp, input_token):
 
 
 def func_set_tmp_addr(get_temp, input_token):
-    arr_tmp_start, arr_addr = st.get_arr_temp()
-    program_block.append(f"(ASSIGN, #{str(arr_tmp_start)}, {str(arr_addr)}, )")
+    pass
 
 
 def func_save_first_func(get_temp, input_token):
