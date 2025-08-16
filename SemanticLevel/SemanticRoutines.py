@@ -316,21 +316,22 @@ def func_break(get_temp, input_token):
 
 
 def func_parr(get_temp, input_token):
-    arr_index = str(semantic_stack.pop())
-    arr_id = str(semantic_stack.pop())
+    arr_index = semantic_stack.pop()
+    arr_id = semantic_stack.pop()
 
-    # Always get the array's base address (temp_start_pos) from symbol table
+    # Step 1: MULT <index>, #4, temp1 (swap order to match old_project)
+    temp1 = get_temp()
+    temps_list.append(temp1)
+    program_block.append(f"(MULT, {arr_index}, #4, {temp1})")
+
+    # Step 2: ADD base, temp1, temp2
     arr_base_addr = st.get_arr_base_address(arr_id)
+    temp2 = get_temp()
+    temps_list.append(temp2)
+    program_block.append(f"(ADD, #{arr_base_addr}, {temp1}, {temp2})")
 
-    # Compute offset: arr_index * WORD_SIZE
-    semantic_stack.append(f"{arr_index}")
-    semantic_stack.append(f"#{WORD_SIZE}")
-    func_mult_op(get_temp, None)
-
-    # Add base address: base + offset
-    semantic_stack.append("+")
-    semantic_stack.append(f"#{arr_base_addr}")
-    func_add_op(get_temp, None, address_mode=True)
+    # Step 3: Use @temp2 for indirect addressing
+    semantic_stack.append(f"@{temp2}")
 
 
 def func_pop(get_temp, input_token):
@@ -338,6 +339,10 @@ def func_pop(get_temp, input_token):
 
 
 def func_set_tmp_addr(get_temp, input_token):
+    arr_tmp_start, arr_addr = st.get_arr_temp()
+    print(f"[DEBUG] Allocated array at address {arr_addr} with base {arr_tmp_start}")
+    # Emit array base initialization as in old_project
+    program_block.append(f"(ASSIGN, #0, {arr_addr}, )")
     pass
 
 
@@ -366,6 +371,7 @@ def func_output(get_temp, input_token):
 def func_set_tmp_value(get_temp, input_token):
     pop_addr = semantic_stack.pop()
     pop_addr = get_address_better_handling(pop_addr)
+    print(f"[DEBUG] Initializing variable at address {pop_addr}")
     program_block.append(f"(ASSIGN, #0, {pop_addr}, )")
 
 
@@ -403,3 +409,9 @@ def func_while_jp_back(get_temp, input_token):
             if tac and tac[0] == 'b':
                 patched = tac.replace("?", str(get_PB_next()))
                 program_block[program_block.__len__() - 1 - i] = patched.replace("b", "")
+
+# Utility to reset TempManager after declarations (call this after all declarations, e.g., at start of main)
+def reset_temp_manager_after_declarations():
+    from SemanticLevel.Semantic import TempManager
+    from SemanticLevel.SymbolTable import SymbolTableClass
+    TempManager.get_instance().current_temp = max(SymbolTableClass.TEMP_BASE, SymbolTableClass.next_var_addr)

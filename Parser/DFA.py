@@ -1,6 +1,7 @@
 from collections import deque
 
 from anytree import Node, RenderTree
+
 from Parser import first_follow
 from SemanticLevel import Semantic
 
@@ -79,12 +80,10 @@ class State:
         # non terminal
         else:
             for nt_trans in self.nterminal_trans:
-                normal_trans = nterminal_first_dict[nt_trans[0]].__contains__(
-                    token)
-                epsilon_trans = nterminal_follow_dict[nt_trans[0]].__contains__(
-                    token
-                ) and nterminal_first_dict[nt_trans[0]].__contains__("")
+                normal_trans = nterminal_first_dict[nt_trans[0]].__contains__(token)
+                epsilon_trans = nterminal_follow_dict[nt_trans[0]].__contains__(token) and nterminal_first_dict[nt_trans[0]].__contains__("")
                 if normal_trans or epsilon_trans:
+                    print(f"[DFA TRACE] Nonterminal transition: {nt_trans[0]} on token '{token}' (normal: {normal_trans}, epsilon: {epsilon_trans})")
                     states_stack.pop()
                     states_stack.append(nt_trans[1])
                     states_stack.append(nterminal_first_state[nt_trans[0]])
@@ -99,9 +98,21 @@ class State:
                     if log:
                         print("read nterminal to " + str(nt_trans[1]))
                     return False, None
-        # if epsilon
-        if self.nterminal_id == 'D':
-            a = 23
+        # if epsilon (patch: use epsilon if token in FOLLOW and epsilon in FIRST)
+        if self.nterminal_id == 'Declaration-list' and self.nterminal_id in nterminal_first_dict and nterminal_first_dict[self.nterminal_id].__contains__("") and nterminal_follow_dict[self.nterminal_id].__contains__(token):
+            print(f"[DFA TRACE] Using epsilon production for Declaration-list on token '{token}' (stack before: {list(states_stack)})")
+            states_stack.pop()
+            tree_heads_list.pop()
+            tree_heads_Nodes_list.pop()
+            print(f"[DFA TRACE] Used epsilon for Declaration-list (stack after: {list(states_stack)})")
+            return False, None
+        if self.nterminal_id in nterminal_first_dict and nterminal_first_dict[self.nterminal_id].__contains__("") and nterminal_follow_dict[self.nterminal_id].__contains__(token):
+            if log:
+                print(f"[DFA PATCH] Using epsilon production for {self.nterminal_id} on token '{token}'")
+            states_stack.pop()
+            tree_heads_list.pop()
+            tree_heads_Nodes_list.pop()
+            return False, None
         if self.terminal_trans.__contains__("") and nterminal_follow_dict[self.nterminal_id].__contains__(token):
             state_id = self.terminal_trans[""]
             state = id_state_dict[state_id]
@@ -209,7 +220,6 @@ class State:
                 if log:
                     print(error)
                 return False, error
-            # self.terminal_trans = dict()
         except:
             a = 1
         if token == "$":
