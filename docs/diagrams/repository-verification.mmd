@@ -1,0 +1,14 @@
+flowchart TB
+    ROOT["compiler/"] --> CORE["core compiler modules"]
+    ROOT --> CASES["cases/"]
+    ROOT --> VERIFY["scripts/verify_cases.py"]
+
+    CASES --> P1["phase1-lexical"]
+    CASES --> P2["phase2-parser"]
+    CASES --> P2E["phase2-parser-expected"]
+    CASES --> P3["phase3-semantic"]
+    CASES --> SAMPLES["samples"]
+
+    P1 --> VERIFY
+    P2E --> VERIFY
+    P3 --> VERIFY

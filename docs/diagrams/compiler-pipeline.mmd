@@ -1,0 +1,6 @@
+flowchart LR
+    SRC["C-minus source file"] --> SCN["Scanner<br/>old_scanner.py + DFA/"]
+    SCN --> PAR["Predictive parser<br/>Parser/parser.py"]
+    PAR --> SEM["Semantic actions<br/>SemanticLevel/SemanticRoutines.py"]
+    SEM --> OUT["Compiler outputs<br/>tokens / tree / errors / TAC"]
+    OUT --> TAC["TAC execution check<br/>Tools/tac_interpreter.py"]

@@ -1,83 +1,83 @@
 # C-minus Compiler
+Hand-written compiler for the C-minus teaching language with DFA-based lexical analysis, FIRST/FOLLOW-guided predictive parsing, semantic checking, and quadruple-style intermediate code generation.
 
-Hand-built compiler for the C-minus teaching language. The maintained pipeline in this repository is:
+## Academic Context / Methodology
 
-`old_scanner.py` -> `Parser/parser.py` -> `SemanticLevel/*` -> `output/`
+- Primary pipeline is generator-independent: scanner, parser, semantic routines, and IR emission are implemented manually rather than delegated to a compiler framework.
+- Lexical analysis is implemented as an explicit deterministic finite automaton over handcrafted transition tables in `DFA/` and `old_scanner.py`.
+- Syntax analysis is implemented as a predictive parser: grammar productions from `Parser/grammer.txt` are converted into parser states in `Parser/grammer_to_transition.py`, and lookahead decisions are constrained by precomputed FIRST/FOLLOW sets in `Parser/first_follow.py`.
+- Semantic processing is syntax-directed: action symbols embedded in the grammar dispatch routines in `SemanticLevel/SemanticRoutines.py` during parsing.
+- Semantic state is managed through a scoped symbol table, auxiliary stacks, backpatching for control flow, and a quadruple-form three-address code buffer (`program_block`).
+- `antlr/` and `py_antlr.py` provide a separate ANTLR-based reference path for comparison, but the maintained compiler path is the hand-built frontend.
 
-The repository also includes an optional ANTLR reference path in `py_antlr.py` and `antlr/` for comparison work.
-
-## Requirements
+## Technologies Used
 
 - Python 3
-- `anytree`
-- `antlr4-python3-runtime` for the ANTLR comparison flow
+- Standard library: `argparse`, `collections.deque`, `contextlib`, `pathlib`, `re`, `shutil`, `subprocess`
+- `anytree` for parse-tree rendering
+- `antlr4-python3-runtime` for the optional ANTLR reference flow
+- Mermaid for architecture documentation
 
-Example setup:
+## Features
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install anytree antlr4-python3-runtime
-```
+- Compiles C-minus source into tokens, lexical errors, parse tree, syntax errors, semantic errors, symbol table output, and three-address code.
+- Supports declarations, arrays, expressions, `if/else`, `repeat-until`, `while`, `return`, function declarations, function calls, and `output`.
+- Generates quadruple-style TAC and includes a local TAC interpreter in `Tools/tac_interpreter.py` for execution checks.
+- Organizes the project’s phased coursework and regression assets under `cases/` and includes a repeatable verification script in `scripts/verify_cases.py`.
+- Keeps an ANTLR grammar and runtime path for secondary validation without replacing the main handwritten compiler path.
 
-## Usage
-
-Compile a source file:
-
-```bash
-python compiler.py path/to/input.c
-```
-
-Verbose mode:
+## Quick Start / Reproducibility
 
 ```bash
-python compiler.py cases/phase3-semantic/Test6/input.txt --verbose
+git clone https://github.com/0ALI0ZARGAR0/compiler.git && cd compiler
+python3 -m venv .venv && . .venv/bin/activate && pip install anytree antlr4-python3-runtime
+python3 compiler.py cases/phase3-semantic/Test6/input.txt && python3 scripts/verify_cases.py
 ```
 
-Run the optional ANTLR comparison:
+The first command clones the repository, the second installs the runtime dependencies, and the third both runs a representative semantic/code-generation case and executes the project’s phase-level verification script.
 
-```bash
-python compiler.py cases/phase3-semantic/Test6/input.txt --antlr
+## Mermaid Diagrams
+
+GitHub renders the Mermaid blocks below visually in the README. The source for the same diagrams is kept under `docs/diagrams/`.
+
+### Compilation Pipeline
+
+```mermaid
+flowchart LR
+    SRC["C-minus source file"] --> SCN["Scanner<br/>old_scanner.py + DFA/"]
+    SCN --> PAR["Predictive parser<br/>Parser/parser.py"]
+    PAR --> SEM["Semantic actions<br/>SemanticLevel/SemanticRoutines.py"]
+    SEM --> OUT["Compiler outputs<br/>tokens / tree / errors / TAC"]
+    OUT --> TAC["TAC execution check<br/>Tools/tac_interpreter.py"]
 ```
 
-The CLI copies the selected input into `input.txt` because some legacy parser modules expect that filename during import.
+### Parser Construction Path
 
-## Generated Output
+```mermaid
+flowchart TD
+    G["Parser/grammer.txt"] --> BUILD["grammer_to_transition.py<br/>rule_to_states(...)"]
+    FF["Parser/first_follow.py"] --> STATE["Parser/DFA.py<br/>lookahead-driven state transitions"]
+    BUILD --> STATE
+    TOK["scanner token stream"] --> STATE
+    STATE --> TREE["explicit parse tree"]
+    STATE --> ACT["embedded semantic actions"]
+```
 
-Each run writes compiler artifacts to `output/`:
+### Repository and Verification Structure
 
-- `tokens.txt`
-- `symbol_table.txt`
-- `parse_tree.txt`
-- `syntax_errors.txt`
-- `semantic_errors.txt`
-- `output.txt`
+```mermaid
+flowchart TB
+    ROOT["compiler/"] --> CORE["core compiler modules"]
+    ROOT --> CASES["cases/"]
+    ROOT --> VERIFY["scripts/verify_cases.py"]
 
-The root-level `output.txt` is also generated for compatibility with the existing TAC tooling.
+    CASES --> P1["phase1-lexical"]
+    CASES --> P2["phase2-parser"]
+    CASES --> P2E["phase2-parser-expected"]
+    CASES --> P3["phase3-semantic"]
+    CASES --> SAMPLES["samples"]
 
-## Repository Layout
-
-- `compiler.py`: main entrypoint
-- `old_scanner.py`: DFA-based scanner
-- `DFA/`: scanner state machine helpers
-- `Parser/`: grammar, FIRST/FOLLOW tables, parser automaton
-- `SemanticLevel/`: semantic routines, symbol table, TAC generation
-- `Tools/`: small runtime/config helpers, including `tac_interpreter.py`
-- `antlr/`, `py_antlr.py`: optional ANTLR reference implementation
-
-## Test Assets
-
-The repository keeps the local coursework/regression inputs that were already being used with this compiler:
-
-- `cases/samples/`: general input samples
-- `cases/phase1-lexical/`: scanner-oriented cases
-- `cases/phase2-parser/`: parser input samples
-- `cases/phase2-parser-expected/`: parser expected-output cases
-- `cases/phase3-semantic/`: semantic/code-generation cases
-
-`test_runs/` is treated as generated local output and is not part of the tracked project.
-
-## Notes
-
-- The coherent compiler baseline is the `origin/main` code line (`7b8a375`), not the later local experimental scaffold.
-- Generated output files are intentionally ignored so the repository stays clean after runs.
+    P1 --> VERIFY
+    P2E --> VERIFY
+    P3 --> VERIFY
+```

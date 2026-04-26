@@ -1,0 +1,7 @@
+flowchart TD
+    G["Parser/grammer.txt"] --> BUILD["grammer_to_transition.py<br/>rule_to_states(...)"]
+    FF["Parser/first_follow.py"] --> STATE["Parser/DFA.py<br/>lookahead-driven state transitions"]
+    BUILD --> STATE
+    TOK["scanner token stream"] --> STATE
+    STATE --> TREE["explicit parse tree"]
+    STATE --> ACT["embedded semantic actions"]
