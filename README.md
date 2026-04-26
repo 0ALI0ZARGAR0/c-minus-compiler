@@ -41,23 +41,23 @@ The first command clones the repository, the second installs the runtime depende
 This section is auto-generated from repository commit history by `scripts/update_contributor_overview.py`. It uses an alias map so contributor identities remain merged consistently across different commit emails.
 
 <!-- contributor-overview:start -->
-Auto-generated from current branch commit history. Total counted commits: **35**.
+Auto-generated from current branch commit history. Total counted commits: **36**.
 
 | Contributor | Commits | Share |
 | --- | ---: | ---: |
-| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 26 | 74.3% |
-| [Eliya Kaheni](https://github.com/EliyaKaheni) | 6 | 17.1% |
-| [Hamidreza Entezari](https://github.com/hamidrezaen) | 3 | 8.6% |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 27 | 75.0% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 6 | 16.7% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 3 | 8.3% |
 
 ```mermaid
 pie showData
     title Commit Share by Contributor
-    "Ali Zargar" : 26
+    "Ali Zargar" : 27
     "Eliya Kaheni" : 6
     "Hamidreza Entezari" : 3
 ```
 
-[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/compiler/graphs/contributors)
+[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/c-minus-compiler/graphs/contributors)
 <!-- contributor-overview:end -->
 
 ## Mermaid Diagrams
@@ -105,4 +105,5 @@ flowchart TB
     P2E --> VERIFY
     P3 --> VERIFY
 ```
+
 
