@@ -44,16 +44,18 @@ Auto-generated from current branch history.
 
 | Contributor | Share |
 | --- | ---: |
-| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 75.0% |
-| [Eliya Kaheni](https://github.com/EliyaKaheni) | 16.7% |
-| [Hamidreza Entezari](https://github.com/hamidrezaen) | 8.3% |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 74.4% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 15.4% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.7% |
+| github-actions[bot] | 2.6% |
 
 ```mermaid
 pie
     title Relative Contribution Share
-    "Ali Zargar" : 75.0
-    "Eliya Kaheni" : 16.7
-    "Hamidreza Entezari" : 8.3
+    "Ali Zargar" : 74.4
+    "Eliya Kaheni" : 15.4
+    "Hamidreza Entezari" : 7.7
+    "github-actions[bot]" : 2.6
 ```
 
 [Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/c-minus-compiler/graphs/contributors)
@@ -104,5 +106,6 @@ flowchart TB
     P2E --> VERIFY
     P3 --> VERIFY
 ```
+
 
 
