@@ -44,18 +44,18 @@ Auto-generated from current branch history.
 
 | Contributor | Share |
 | --- | ---: |
-| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 74.4% |
-| [Eliya Kaheni](https://github.com/EliyaKaheni) | 15.4% |
-| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.7% |
-| github-actions[bot] | 2.6% |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 73.2% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 14.6% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.3% |
+| github-actions[bot] | 4.9% |
 
 ```mermaid
 pie
     title Relative Contribution Share
-    "Ali Zargar" : 74.4
-    "Eliya Kaheni" : 15.4
-    "Hamidreza Entezari" : 7.7
-    "github-actions[bot]" : 2.6
+    "Ali Zargar" : 73.2
+    "Eliya Kaheni" : 14.6
+    "Hamidreza Entezari" : 7.3
+    "github-actions[bot]" : 4.9
 ```
 
 [Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/c-minus-compiler/graphs/contributors)
@@ -82,5 +82,6 @@ The diagram sources are kept as Mermaid files under `docs/diagrams/`. The README
 <p align="center">
   <img src="docs/diagrams/repository-verification.svg" alt="Repository and verification structure diagram" width="760" />
 </p>
+
 
 
