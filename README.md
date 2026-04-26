@@ -36,6 +36,30 @@ python3 compiler.py cases/phase3-semantic/Test6/input.txt && python3 scripts/ver
 
 The first command clones the repository, the second installs the runtime dependencies, and the third both runs a representative semantic/code-generation case and executes the project’s phase-level verification script.
 
+## Contributor Overview
+
+This section is auto-generated from repository commit history by `scripts/update_contributor_overview.py`. It uses an alias map so contributor identities remain merged consistently across different commit emails.
+
+<!-- contributor-overview:start -->
+Auto-generated from current branch commit history. Total counted commits: **35**.
+
+| Contributor | Commits | Share |
+| --- | ---: | ---: |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 26 | 74.3% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 6 | 17.1% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 3 | 8.6% |
+
+```mermaid
+pie showData
+    title Commit Share by Contributor
+    "Ali Zargar" : 26
+    "Eliya Kaheni" : 6
+    "Hamidreza Entezari" : 3
+```
+
+[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/compiler/graphs/contributors)
+<!-- contributor-overview:end -->
+
 ## Mermaid Diagrams
 
 GitHub renders the Mermaid blocks below visually in the README. The source for the same diagrams is kept under `docs/diagrams/`.
@@ -81,3 +105,4 @@ flowchart TB
     P2E --> VERIFY
     P3 --> VERIFY
 ```
+
