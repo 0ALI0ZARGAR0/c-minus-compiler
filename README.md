@@ -61,51 +61,26 @@ pie
 [Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/c-minus-compiler/graphs/contributors)
 <!-- contributor-overview:end -->
 
-## Mermaid Diagrams
+## Architecture Diagrams
 
-GitHub renders the Mermaid blocks below visually in the README. The source for the same diagrams is kept under `docs/diagrams/`.
+The diagram sources are kept as Mermaid files under `docs/diagrams/`. The README embeds pre-rendered SVGs from those sources because GitHub's Mermaid rendering does not size these diagrams well.
 
 ### Compilation Pipeline
 
-```mermaid
-flowchart LR
-    SRC["C-minus source file"] --> SCN["Scanner<br/>old_scanner.py + DFA/"]
-    SCN --> PAR["Predictive parser<br/>Parser/parser.py"]
-    PAR --> SEM["Semantic actions<br/>SemanticLevel/SemanticRoutines.py"]
-    SEM --> OUT["Compiler outputs<br/>tokens / tree / errors / TAC"]
-    OUT --> TAC["TAC execution check<br/>Tools/tac_interpreter.py"]
-```
+<p align="center">
+  <img src="docs/diagrams/compiler-pipeline.svg" alt="Compilation pipeline diagram" width="1000" />
+</p>
 
 ### Parser Construction Path
 
-```mermaid
-flowchart TD
-    G["Parser/grammer.txt"] --> BUILD["grammer_to_transition.py<br/>rule_to_states(...)"]
-    FF["Parser/first_follow.py"] --> STATE["Parser/DFA.py<br/>lookahead-driven state transitions"]
-    BUILD --> STATE
-    TOK["scanner token stream"] --> STATE
-    STATE --> TREE["explicit parse tree"]
-    STATE --> ACT["embedded semantic actions"]
-```
+<p align="center">
+  <img src="docs/diagrams/parser-construction.svg" alt="Parser construction path diagram" width="760" />
+</p>
 
 ### Repository and Verification Structure
 
-```mermaid
-flowchart TB
-    ROOT["compiler/"] --> CORE["core compiler modules"]
-    ROOT --> CASES["cases/"]
-    ROOT --> VERIFY["scripts/verify_cases.py"]
-
-    CASES --> P1["phase1-lexical"]
-    CASES --> P2["phase2-parser"]
-    CASES --> P2E["phase2-parser-expected"]
-    CASES --> P3["phase3-semantic"]
-    CASES --> SAMPLES["samples"]
-
-    P1 --> VERIFY
-    P2E --> VERIFY
-    P3 --> VERIFY
-```
-
+<p align="center">
+  <img src="docs/diagrams/repository-verification.svg" alt="Repository and verification structure diagram" width="760" />
+</p>
 
 
