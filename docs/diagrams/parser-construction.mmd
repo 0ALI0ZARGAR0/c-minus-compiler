@@ -1,7 +1,46 @@
 flowchart TD
-    G["Parser/grammer.txt"] --> BUILD["grammer_to_transition.py<br/>rule_to_states(...)"]
-    FF["Parser/first_follow.py"] --> STATE["Parser/DFA.py<br/>lookahead-driven state transitions"]
-    BUILD --> STATE
-    TOK["scanner token stream"] --> STATE
-    STATE --> TREE["explicit parse tree"]
-    STATE --> ACT["embedded semantic actions"]
+    subgraph Build["Import-Time Parser Construction"]
+        G["Parser/grammer.txt"]
+        FID["fill_nterminal_id_dict"]
+        RTS["rule_to_states"]
+        IDS["id_state_dict"]
+        NFS["nterminal_first_state"]
+        G --> FID
+        G --> RTS
+        FID --> RTS
+        RTS --> IDS
+        RTS --> NFS
+    end
+
+    subgraph Lookahead["Predictive Tables"]
+        FIRST["nterminal_first_dict"]
+        FOLLOW["nterminal_follow_dict"]
+    end
+
+    subgraph Runtime["Runtime Parse Step"]
+        STK["states_stack<br/>deque"]
+        STEP["State.next_state(...)"]
+        TERM{"terminal edge?"}
+        NTERM{"nonterminal FIRST/FOLLOW match?"}
+        EPS{"epsilon edge?"}
+        ACTSYM{"semantic action edge?"}
+        TREE["parse tree node append"]
+        ERR["error recovery / diagnostics"]
+        STK --> STEP
+        STEP --> TERM
+        TERM -->|yes| TREE
+        TERM -->|no| NTERM
+        NTERM -->|yes| STK
+        NTERM -->|no| EPS
+        EPS -->|yes| STK
+        EPS -->|no| ACTSYM
+        ACTSYM -->|yes| TREE
+        ACTSYM -->|no| ERR
+    end
+
+    IDS --> STK
+    NFS --> STK
+    FIRST --> NTERM
+    FOLLOW --> NTERM
+    FOLLOW --> EPS
+    FOLLOW --> ACTSYM

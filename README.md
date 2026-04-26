@@ -44,44 +44,208 @@ Auto-generated from current branch history.
 
 | Contributor | Share |
 | --- | ---: |
-| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 73.2% |
-| [Eliya Kaheni](https://github.com/EliyaKaheni) | 14.6% |
-| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.3% |
-| github-actions[bot] | 4.9% |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 76.9% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 15.4% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.7% |
 
 ```mermaid
 pie
     title Relative Contribution Share
-    "Ali Zargar" : 73.2
-    "Eliya Kaheni" : 14.6
-    "Hamidreza Entezari" : 7.3
-    "github-actions[bot]" : 4.9
+    "Ali Zargar" : 76.9
+    "Eliya Kaheni" : 15.4
+    "Hamidreza Entezari" : 7.7
 ```
 
-[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/c-minus-compiler/graphs/contributors)
+[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/compiler/graphs/contributors)
 <!-- contributor-overview:end -->
 
 ## Architecture Diagrams
 
-The diagram sources are kept as Mermaid files under `docs/diagrams/`. The README embeds pre-rendered SVGs from those sources because GitHub's Mermaid rendering does not size these diagrams well.
+The source for all diagrams is kept under `docs/diagrams/`. The README currently includes Mermaid definitions directly so the project structure and compiler pipeline stay inspectable in plain text and can later be rendered to SVG from the same sources.
 
-### Compilation Pipeline
+### End-to-End Compiler Architecture
 
-<p align="center">
-  <img src="docs/diagrams/compiler-pipeline.svg" alt="Compilation pipeline diagram" width="1000" />
-</p>
+```mermaid
+flowchart LR
+    subgraph Input["Source Input"]
+        SRC["C-minus program"]
+    end
 
-### Parser Construction Path
+    subgraph Lex["Lexical Analysis"]
+        DFA["DFA transition tables<br/>DFA/states_trans.py"]
+        SCN["Scanner runtime<br/>old_scanner.py"]
+        TOK["Token stream<br/>(type, lexeme, line)"]
+        SRC --> SCN --> TOK
+        DFA -.drives.-> SCN
+    end
 
-<p align="center">
-  <img src="docs/diagrams/parser-construction.svg" alt="Parser construction path diagram" width="760" />
-</p>
+    subgraph Syn["Syntax Analysis"]
+        GR["Grammar rules<br/>Parser/grammer.txt"]
+        FF["FIRST/FOLLOW sets<br/>Parser/first_follow.py"]
+        PAR["Predictive parser DFA<br/>Parser/parser.py + Parser/DFA.py"]
+        TREE["Concrete parse tree<br/>anytree nodes"]
+        SYNERR["Syntax diagnostics"]
+        GR -.compiled to states.-> PAR
+        FF -.lookahead decisions.-> PAR
+        TOK --> PAR
+        PAR --> TREE
+        PAR --> SYNERR
+    end
 
-### Repository and Verification Structure
+    subgraph Sem["Semantic Analysis and IR"]
+        ACT["Embedded action symbols<br/>#assign / #jpf / #call_*"]
+        ROUT["SemanticRoutines.py"]
+        ST["Scoped symbol table"]
+        PB["program_block<br/>quadruple TAC"]
+        SEMERR["Semantic diagnostics"]
+        PAR --> ACT --> ROUT
+        ROUT --> ST
+        ROUT --> PB
+        ROUT --> SEMERR
+    end
 
-<p align="center">
-  <img src="docs/diagrams/repository-verification.svg" alt="Repository and verification structure diagram" width="760" />
-</p>
+    subgraph Out["Artifacts and Validation"]
+        OUT["output/<br/>tokens, tree, symbol_table,<br/>syntax_errors, semantic_errors, output.txt"]
+        TAC["Tools/tac_interpreter.py"]
+        PB --> OUT
+        PB --> TAC
+    end
+
+    REF["ANTLR reference path<br/>py_antlr.py + antlr/"] -.optional comparison.-> OUT
+```
+
+### Grammar-to-Parser State Construction
+
+```mermaid
+flowchart TD
+    subgraph Build["Import-Time Parser Construction"]
+        G["Parser/grammer.txt"]
+        FID["fill_nterminal_id_dict"]
+        RTS["rule_to_states"]
+        IDS["id_state_dict"]
+        NFS["nterminal_first_state"]
+        G --> FID
+        G --> RTS
+        FID --> RTS
+        RTS --> IDS
+        RTS --> NFS
+    end
+
+    subgraph Lookahead["Predictive Tables"]
+        FIRST["nterminal_first_dict"]
+        FOLLOW["nterminal_follow_dict"]
+    end
+
+    subgraph Runtime["Runtime Parse Step"]
+        STK["states_stack<br/>deque"]
+        STEP["State.next_state(...)"]
+        TERM{"terminal edge?"}
+        NTERM{"nonterminal FIRST/FOLLOW match?"}
+        EPS{"epsilon edge?"}
+        ACTSYM{"semantic action edge?"}
+        TREE["parse tree node append"]
+        ERR["error recovery / diagnostics"]
+        STK --> STEP
+        STEP --> TERM
+        TERM -->|yes| TREE
+        TERM -->|no| NTERM
+        NTERM -->|yes| STK
+        NTERM -->|no| EPS
+        EPS -->|yes| STK
+        EPS -->|no| ACTSYM
+        ACTSYM -->|yes| TREE
+        ACTSYM -->|no| ERR
+    end
+
+    IDS --> STK
+    NFS --> STK
+    FIRST --> NTERM
+    FOLLOW --> NTERM
+    FOLLOW --> EPS
+    FOLLOW --> ACTSYM
+```
+
+### Semantic Execution, Backpatching, and TAC
+
+```mermaid
+flowchart LR
+    subgraph Driver["Syntax-Directed Execution"]
+        ACT["parser action symbol"]
+        RUN["Semantic.run(...)"]
+        ROUT["SemanticRoutines"]
+        ACT --> RUN --> ROUT
+    end
+
+    subgraph State["Semantic State"]
+        SS["semantic_stack"]
+        ST["SymbolTableClass"]
+        TM["TempManager"]
+        SNAP["SnapshotStack"]
+        FRS["FunctionRelatedStack"]
+    end
+
+    subgraph IR["Intermediate Representation"]
+        PB["program_block"]
+        IFBP["if / else backpatching<br/>save, jpf_save, jp"]
+        LOOPBP["repeat / while backpatching<br/>label, until, while_jpf, while_jp_back"]
+        CALLS["call protocol<br/>save snapshot, push args,<br/>return address, restore state"]
+        ARR["array address calculation<br/>MULT index,#4 -> ADD base,offset"]
+    end
+
+    subgraph Verify["Execution Check"]
+        TAC["Tools/tac_interpreter.py"]
+        PRINT["observed PRINT values"]
+    end
+
+    ROUT --> SS
+    ROUT --> ST
+    ROUT --> TM
+    ROUT --> SNAP
+    ROUT --> FRS
+    ROUT --> PB
+    SS --> ARR --> PB
+    ST --> CALLS --> PB
+    SNAP --> CALLS
+    FRS --> CALLS
+    PB --> IFBP
+    PB --> LOOPBP
+    PB --> TAC --> PRINT
+```
+
+### Repository Phases and Verification Coverage
+
+```mermaid
+flowchart TB
+    ROOT["compiler/"] --> CORE["core compiler implementation"]
+    ROOT --> CASES["cases/"]
+    ROOT --> DOCS["docs/diagrams/"]
+    ROOT --> VERIFY["scripts/verify_cases.py"]
+
+    subgraph CaseTree["Phased Test Assets"]
+        P1["phase1-lexical<br/>scanner outputs"]
+        P2["phase2-parser<br/>parser input corpus"]
+        P2E["phase2-parser-expected<br/>expected parse trees / syntax errors"]
+        P3["phase3-semantic<br/>semantic + TAC cases"]
+        SAMP["samples<br/>mixed reference programs"]
+    end
+
+    CASES --> P1
+    CASES --> P2
+    CASES --> P2E
+    CASES --> P3
+    CASES --> SAMP
+
+    P1 --> V1["verify lexical_errors + tokens"]
+    P2E --> V2["verify syntax_errors"]
+    P3 --> V3["verify semantic_errors + TAC output"]
+
+    V1 --> VERIFY
+    V2 --> VERIFY
+    V3 --> VERIFY
+
+    VERIFY --> REPORT["repeatable phase smoke-check"]
+```
+
 
 
 

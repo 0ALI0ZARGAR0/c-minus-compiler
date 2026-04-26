@@ -1,0 +1,42 @@
+flowchart LR
+    subgraph Driver["Syntax-Directed Execution"]
+        ACT["parser action symbol"]
+        RUN["Semantic.run(...)"]
+        ROUT["SemanticRoutines"]
+        ACT --> RUN --> ROUT
+    end
+
+    subgraph State["Semantic State"]
+        SS["semantic_stack"]
+        ST["SymbolTableClass"]
+        TM["TempManager"]
+        SNAP["SnapshotStack"]
+        FRS["FunctionRelatedStack"]
+    end
+
+    subgraph IR["Intermediate Representation"]
+        PB["program_block"]
+        IFBP["if / else backpatching<br/>save, jpf_save, jp"]
+        LOOPBP["repeat / while backpatching<br/>label, until, while_jpf, while_jp_back"]
+        CALLS["call protocol<br/>save snapshot, push args,<br/>return address, restore state"]
+        ARR["array address calculation<br/>MULT index,#4 -> ADD base,offset"]
+    end
+
+    subgraph Verify["Execution Check"]
+        TAC["Tools/tac_interpreter.py"]
+        PRINT["observed PRINT values"]
+    end
+
+    ROUT --> SS
+    ROUT --> ST
+    ROUT --> TM
+    ROUT --> SNAP
+    ROUT --> FRS
+    ROUT --> PB
+    SS --> ARR --> PB
+    ST --> CALLS --> PB
+    SNAP --> CALLS
+    FRS --> CALLS
+    PB --> IFBP
+    PB --> LOOPBP
+    PB --> TAC --> PRINT

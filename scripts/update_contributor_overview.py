@@ -16,6 +16,8 @@ IDENTITIES_PATH = ROOT / "scripts" / "contributor_identities.json"
 START_MARKER = "<!-- contributor-overview:start -->"
 END_MARKER = "<!-- contributor-overview:end -->"
 SHORTLOG_RE = re.compile(r"^\s*(\d+)\s+(.*?)\s+<(.+)>$")
+EXCLUDED_CONTRIBUTOR_NAMES = {"github-actions[bot]"}
+EXCLUDED_CONTRIBUTOR_EMAILS = {"41898282+github-actions[bot]@users.noreply.github.com"}
 
 
 def load_identity_map() -> Dict[str, dict]:
@@ -48,6 +50,9 @@ def collect_commit_counts(identity_map: Dict[str, dict]) -> Counter:
         commit_count = int(match.group(1))
         raw_name = match.group(2).strip()
         raw_email = match.group(3).strip().lower()
+
+        if raw_name in EXCLUDED_CONTRIBUTOR_NAMES or raw_email in EXCLUDED_CONTRIBUTOR_EMAILS:
+            continue
 
         contributor = identity_map.get(raw_email) or identity_map.get(raw_name.lower())
         if contributor is None:

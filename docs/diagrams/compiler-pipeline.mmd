@@ -1,6 +1,46 @@
 flowchart LR
-    SRC["C-minus source file"] --> SCN["Scanner<br/>old_scanner.py + DFA/"]
-    SCN --> PAR["Predictive parser<br/>Parser/parser.py"]
-    PAR --> SEM["Semantic actions<br/>SemanticLevel/SemanticRoutines.py"]
-    SEM --> OUT["Compiler outputs<br/>tokens / tree / errors / TAC"]
-    OUT --> TAC["TAC execution check<br/>Tools/tac_interpreter.py"]
+    subgraph Input["Source Input"]
+        SRC["C-minus program"]
+    end
+
+    subgraph Lex["Lexical Analysis"]
+        DFA["DFA transition tables<br/>DFA/states_trans.py"]
+        SCN["Scanner runtime<br/>old_scanner.py"]
+        TOK["Token stream<br/>(type, lexeme, line)"]
+        SRC --> SCN --> TOK
+        DFA -.drives.-> SCN
+    end
+
+    subgraph Syn["Syntax Analysis"]
+        GR["Grammar rules<br/>Parser/grammer.txt"]
+        FF["FIRST/FOLLOW sets<br/>Parser/first_follow.py"]
+        PAR["Predictive parser DFA<br/>Parser/parser.py + Parser/DFA.py"]
+        TREE["Concrete parse tree<br/>anytree nodes"]
+        SYNERR["Syntax diagnostics"]
+        GR -.compiled to states.-> PAR
+        FF -.lookahead decisions.-> PAR
+        TOK --> PAR
+        PAR --> TREE
+        PAR --> SYNERR
+    end
+
+    subgraph Sem["Semantic Analysis and IR"]
+        ACT["Embedded action symbols<br/>#assign / #jpf / #call_*"]
+        ROUT["SemanticRoutines.py"]
+        ST["Scoped symbol table"]
+        PB["program_block<br/>quadruple TAC"]
+        SEMERR["Semantic diagnostics"]
+        PAR --> ACT --> ROUT
+        ROUT --> ST
+        ROUT --> PB
+        ROUT --> SEMERR
+    end
+
+    subgraph Out["Artifacts and Validation"]
+        OUT["output/<br/>tokens, tree, symbol_table,<br/>syntax_errors, semantic_errors, output.txt"]
+        TAC["Tools/tac_interpreter.py"]
+        PB --> OUT
+        PB --> TAC
+    end
+
+    REF["ANTLR reference path<br/>py_antlr.py + antlr/"] -.optional comparison.-> OUT
