@@ -7,11 +7,8 @@ symbol_table_instance = None
 class SymbolTableClass:
     scope_stack = []
     pars_table = []
-    DATA_BASE = 500
-    TEMP_BASE = 1000
-    next_var_addr = DATA_BASE
-    next_arr_addr = DATA_BASE
-    next_temp_addr = TEMP_BASE
+    next_var_addr = 528  # Start variables at 528
+    next_arr_addr = 508  # Start arrays at 508
 
     @staticmethod
     def get_instance():
@@ -21,9 +18,10 @@ class SymbolTableClass:
         return symbol_table_instance
 
     def add(self, row):
+        global last_adr
         # Determine if this is an array or a variable
         if hasattr(row, 'is_arr') and getattr(row, 'is_arr', False):
-            # Allocate array at next_arr_addr, do NOT increment here
+            # Allocate array at next_arr_addr, but do NOT increment here
             row.address = SymbolTableClass.next_arr_addr
         else:
             # Allocate variable at next_var_addr
@@ -46,6 +44,7 @@ class SymbolTableClass:
                     return self.pars_table[self.pars_table.__len__() - 1 - i]
 
     def set_last_args(self, args, arr_temp):
+        global last_adr
         # Update array address to reserve a block for the array
         arr_row = self.pars_table[self.pars_table.__len__() - 1]
         arr_row.args_cells = args
@@ -53,9 +52,6 @@ class SymbolTableClass:
         arr_row.temp_start_pos = arr_row.address  # base address is the array's address
         # Reserve space for the array
         SymbolTableClass.next_arr_addr += 4 * args
-        # Ensure next_var_addr is always after arrays
-        if SymbolTableClass.next_var_addr < SymbolTableClass.next_arr_addr:
-            SymbolTableClass.next_var_addr = SymbolTableClass.next_arr_addr
 
     def set_line_category(self, line, c):
         for row in self.pars_table:

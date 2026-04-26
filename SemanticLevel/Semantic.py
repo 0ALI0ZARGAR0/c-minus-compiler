@@ -15,7 +15,6 @@ class TempManager:
     The manager allocates aligned integer addresses by increasing a
     counter by a fixed stride (word size) for each new temporary.
     """
-    TEMP_BASE = 1000
     current_temp = 0
     increase_amount = 0
 
@@ -28,7 +27,7 @@ class TempManager:
         # Always start temps at the next available variable address
         from SemanticLevel.SymbolTable import SymbolTableClass
         if current_temp is None:
-            self.current_temp = max(SymbolTableClass.TEMP_BASE, SymbolTableClass.next_var_addr)
+            self.current_temp = SymbolTableClass.next_var_addr
         else:
             self.current_temp = current_temp
         self.increase_amount = increase_amount

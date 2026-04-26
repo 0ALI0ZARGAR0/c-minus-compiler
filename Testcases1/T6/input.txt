@@ -1,0 +1,29 @@
+/* State machine test file */
+
+// Testing complex operators
+if (a >= 10) {
+    b = a;
+} else if (a <= 5) {
+    b = 2;
+} else if (a != 7) {
+    b = 3;
+}
+
+// Test no spaces between tokens
+int x=5;y=10;z=x+y*2;
+
+// Test invalid inputs mixed with valid ones
+abc123 + 456def * @#$ 789;
+
+// Test comment handling
+/* Multi-line
+   comment with
+   nested // line comment inside
+*/
+
+a = 5; // Line comment at end of line
+/* Comment */ b = 6; /* Another comment */
+
+// Test unclosed comment
+/* This comment is not closed
+a = 10; 

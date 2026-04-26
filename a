@@ -1,9 +1,0 @@
-1	OPCode/Assembler	Centralize TAC emission, address management
-2	CodeGen class	Centralize codegen logic, routines mapping
-3	Symbol Table/Scope	Robust scoping, address, and type management
-4	Semantic/Control Stack	Stack-based value and control flow management
-5	Parser Action Mapping	Direct action symbol to routine mapping
-6	Array Addressing/Init	Two-step addressing, base init at declaration
-7	Initialization Order	All inits before computation/assignment
-8	Output/Error Handling	Centralized, robust output and error management
-9	Testing	Full compliance with Phase 3 requirements

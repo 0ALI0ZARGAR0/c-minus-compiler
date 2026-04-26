@@ -8,10 +8,18 @@ ENV/
 env/
 .env
 
+# Generated compiler output
+/output/
+/output.txt
+/ANTLR_p1
+/antlr_parse_tree.txt
+/antlr/antlr_parse_tree.txt
+/antlr/ANTLR_p1
+
 # Scanner output files
-tokens.txt
-lexical_errors.txt
-symbol_table.txt
+/tokens.txt
+/lexical_errors.txt
+/symbol_table.txt
 
 # Java/ANTLR related
 *.class
@@ -27,13 +35,10 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
-*.swo 
+*.swo
 
-T*
-antlr/antlr/Cminus.interp
-antlr/antlr/CminusLexer.interp
-antlr/antlr/CminusLexer.tokens
-antlr/ANTLR_p1
-antlr/antlr/Cminus.tokens
-antlr/ANTLR_p1
-ANTLR_p1
+# Local scratch and analysis artifacts
+.analysis/
+test_runs/
+tmp_while.c
+test_simple.c
