@@ -12,7 +12,6 @@ Hand-written compiler for the C-minus teaching language with DFA-based lexical a
 
 ## Technologies Used
 
-- Python 3
 - Standard library: `argparse`, `collections.deque`, `contextlib`, `pathlib`, `re`, `shutil`, `subprocess`
 - `anytree` for parse-tree rendering
 - `antlr4-python3-runtime` for the optional ANTLR reference flow
@@ -41,20 +40,20 @@ The first command clones the repository, the second installs the runtime depende
 This section is auto-generated from repository commit history by `scripts/update_contributor_overview.py`. It uses an alias map so contributor identities remain merged consistently across different commit emails.
 
 <!-- contributor-overview:start -->
-Auto-generated from current branch commit history. Total counted commits: **35**.
+Auto-generated from current branch history.
 
-| Contributor | Commits | Share |
-| --- | ---: | ---: |
-| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 26 | 74.3% |
-| [Eliya Kaheni](https://github.com/EliyaKaheni) | 6 | 17.1% |
-| [Hamidreza Entezari](https://github.com/hamidrezaen) | 3 | 8.6% |
+| Contributor | Share |
+| --- | ---: |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 75.0% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 16.7% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 8.3% |
 
 ```mermaid
-pie showData
-    title Commit Share by Contributor
-    "Ali Zargar" : 26
-    "Eliya Kaheni" : 6
-    "Hamidreza Entezari" : 3
+pie
+    title Relative Contribution Share
+    "Ali Zargar" : 75.0
+    "Eliya Kaheni" : 16.7
+    "Hamidreza Entezari" : 8.3
 ```
 
 [Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/compiler/graphs/contributors)

@@ -94,21 +94,21 @@ def build_overview_block(counts: Counter, identity_map: Dict[str, dict]) -> str:
         contributor = identity_map.get(name, {"name": name})
         share = (commit_count / total_commits) * 100 if total_commits else 0.0
         contributor_rows.append(
-            f"| {contributor_label(contributor)} | {commit_count} | {share:.1f}% |"
+            f"| {contributor_label(contributor)} | {share:.1f}% |"
         )
-        pie_rows.append(f'    "{name}" : {commit_count}')
+        pie_rows.append(f'    "{name}" : {share:.1f}')
 
     lines = [
         START_MARKER,
-        f"Auto-generated from current branch commit history. Total counted commits: **{total_commits}**.",
+        "Auto-generated from current branch history.",
         "",
-        "| Contributor | Commits | Share |",
-        "| --- | ---: | ---: |",
+        "| Contributor | Share |",
+        "| --- | ---: |",
         *contributor_rows,
         "",
         "```mermaid",
-        "pie showData",
-        "    title Commit Share by Contributor",
+        "pie",
+        "    title Relative Contribution Share",
         *pie_rows,
         "```",
     ]
