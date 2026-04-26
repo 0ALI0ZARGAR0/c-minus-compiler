@@ -98,9 +98,7 @@ def _restore_snapshot(get_temp, input_token):
 
 
 def func_set_starting_line(get_temp, input_token):
-    # TODO:
     return st.set_starting_line(program_block.__len__())
-    pass
 
 
 # function call
@@ -200,12 +198,10 @@ def func_pid(get_temp, input_token):
     if p is None:
         error(ErrorTypeEnum.scoping, input_token)
     semantic_stack.append(p)
-    pass
 
 
 def func_pnum(get_temp, input_token):
     semantic_stack.append("#" + input_token)
-    pass
 
 
 def func_assign(get_temp, input_token):
@@ -217,7 +213,6 @@ def func_assign(get_temp, input_token):
 
 def func_push(get_temp, input_token):
     semantic_stack.append(input_token)
-    pass
 
 
 def func_add_op(get_temp, input_token, address_mode=False):
@@ -312,7 +307,6 @@ def func_break(get_temp, input_token):
         program_block.append(f"b(JP, {'?'}, , )")
     else:
         error(ErrorTypeEnum.break_stmt, None)
-        pass
 
 
 def func_parr(get_temp, input_token):
@@ -338,7 +332,7 @@ def func_pop(get_temp, input_token):
 
 
 def func_set_tmp_addr(get_temp, input_token):
-    pass
+    return None
 
 
 def func_save_first_func(get_temp, input_token):

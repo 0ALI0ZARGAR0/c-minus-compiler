@@ -31,13 +31,13 @@ python compiler.py path/to/input.c
 Verbose mode:
 
 ```bash
-python compiler.py Testcases3/Test6/input.txt --verbose
+python compiler.py cases/phase3-semantic/Test6/input.txt --verbose
 ```
 
 Run the optional ANTLR comparison:
 
 ```bash
-python compiler.py Testcases3/Test6/input.txt --antlr
+python compiler.py cases/phase3-semantic/Test6/input.txt --antlr
 ```
 
 The CLI copies the selected input into `input.txt` because some legacy parser modules expect that filename during import.
@@ -69,11 +69,11 @@ The root-level `output.txt` is also generated for compatibility with the existin
 
 The repository keeps the local coursework/regression inputs that were already being used with this compiler:
 
-- `testcases/`: general input samples
-- `Testcases1/`: scanner-oriented cases
-- `Testcases2/`: parser input samples
-- `Testcases2-pr/`: parser expected-output cases
-- `Testcases3/`: semantic/code-generation cases
+- `cases/samples/`: general input samples
+- `cases/phase1-lexical/`: scanner-oriented cases
+- `cases/phase2-parser/`: parser input samples
+- `cases/phase2-parser-expected/`: parser expected-output cases
+- `cases/phase3-semantic/`: semantic/code-generation cases
 
 `test_runs/` is treated as generated local output and is not part of the tracked project.
 

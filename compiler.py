@@ -9,6 +9,10 @@ Consolidated single-file implementation.
 import os
 import shutil
 import sys
+from contextlib import contextmanager
+
+
+OUTPUT_DIR = "output"
 
 
 def file2str(filepath):
@@ -19,8 +23,8 @@ def file2str(filepath):
 
 def save_tuple2file_based_on_1element(file_name, tl):
     """Save tokens to file grouped by line number"""
-    os.makedirs("output", exist_ok=True)
-    with open(os.path.join("output", file_name), mode="w") as f:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(os.path.join(OUTPUT_DIR, file_name), mode="w") as f:
         this_el = -1
         for t in tl:
             # resolve \n error
@@ -38,18 +42,37 @@ def save_tuple2file_based_on_1element(file_name, tl):
 
 def save_list2file(file_name, l):
     """Save list to file with line numbers"""
-    os.makedirs("output", exist_ok=True)
-    with open(os.path.join("output", file_name), mode="w") as f:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(os.path.join(OUTPUT_DIR, file_name), mode="w") as f:
         for i, t in enumerate(l):
             f.write("{0:4}".format(str(i + 1) + "."))
             f.write(t + "\n")
+
+
+def save_lexical_errors(file_name, errors):
+    """Save lexical errors using the expected grouped-by-line format."""
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(os.path.join(OUTPUT_DIR, file_name), mode="w", encoding="utf-8") as f:
+        if not errors:
+            f.write("There is no lexical error.")
+            return
+
+        this_line = -1
+        for line, token, error_type in errors:
+            if line == this_line:
+                f.write(f"({token}, {error_type}) ")
+            else:
+                if this_line != -1:
+                    f.write("\n")
+                this_line = line
+                f.write(f"{this_line}.\t({token}, {error_type}) ")
 
 
 def save_symbol_table(addr):
     """Save the symbol table into output/symbol_table.txt in a readable form."""
     from SemanticLevel.SymbolTable import SymbolTableClass
     st = SymbolTableClass.get_instance()
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     lines = []
     for row in st.pars_table:
         parts = [
@@ -62,7 +85,7 @@ def save_symbol_table(addr):
         if getattr(row, "is_arr", False):
             parts.append(f"len={row.args_cells}")
         lines.append(" ".join(parts))
-    with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUTPUT_DIR, addr), "w", encoding="utf-8") as f:
         for i, line in enumerate(lines):
             f.write("{0:4}".format(str(i + 1) + "."))
             f.write(line + "\n")
@@ -72,8 +95,8 @@ def save_tree(addr):
     """Save parse tree to file"""
     from Parser import parser
     tree = parser.draw_tree()
-    os.makedirs("output", exist_ok=True)
-    with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(os.path.join(OUTPUT_DIR, addr), "w", encoding="utf-8") as f:
         f.write(tree)
 
 
@@ -81,12 +104,12 @@ def save_syntax_errors(addr):
     """Save syntax errors to file"""
     from Parser import parser
     errors = parser.get_pars_errors()
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     if not errors:
-        with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+        with open(os.path.join(OUTPUT_DIR, addr), "w", encoding="utf-8") as f:
             f.write("There is no syntax error.")
     else:
-        with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+        with open(os.path.join(OUTPUT_DIR, addr), "w", encoding="utf-8") as f:
             for e in errors:
                 f.write(e + "\n")
 
@@ -95,12 +118,12 @@ def save_semantic_errors(addr):
     """Save semantic errors to file"""
     from SemanticLevel import ErrorType
     errors = ErrorType.semantic_errors
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     if not errors:
-        with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+        with open(os.path.join(OUTPUT_DIR, addr), "w", encoding="utf-8") as f:
             f.write("The input program is semantically correct.")
     else:
-        with open(os.path.join("output", addr), "w", encoding="utf-8") as f:
+        with open(os.path.join(OUTPUT_DIR, addr), "w", encoding="utf-8") as f:
             for e in errors:
                 f.write(e + "\n")
 
@@ -108,7 +131,7 @@ def save_semantic_errors(addr):
 def pp_list_of_tuples(lsot):
     """Pretty print intermediate code"""
     from SemanticLevel import ErrorType
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     s = ""
     if ErrorType.semantic_errors:
         s = "The output code has not been generated"
@@ -119,8 +142,45 @@ def pp_list_of_tuples(lsot):
     # Write where the Tester expects and also in our organized folder
     with open("output.txt", "w") as f_root:
         f_root.write(s)
-    with open(os.path.join("output", "output.txt"), "w") as f_dir:
+    with open(os.path.join(OUTPUT_DIR, "output.txt"), "w") as f_dir:
         f_dir.write(s)
+
+
+@contextmanager
+def quiet_semantic_output(verbose):
+    """Temporarily suppress verbose semantic traces on the default path."""
+    if verbose:
+        yield
+        return
+
+    from Tools import Development
+    from SemanticLevel import Semantic
+    from SemanticLevel import SemanticRoutines
+
+    original_develop_mode = Development.develop_mode
+    original_semantic_init = Semantic.Semantic.__init__
+    original_semantic_run = Semantic.Semantic.run
+
+    def clean_semantic_init(self, pars_table):
+        self.parse_table = pars_table
+        self.temp_manager = Semantic.TempManager(1500, 4)
+        Semantic.semantic_instance = self
+
+    def clean_semantic_run(self, func_name, input_token):
+        func_name = func_name[1:len(func_name)]
+        getattr(SemanticRoutines, "func_" + func_name)(
+            self.temp_manager.get_temp, input_token
+        )
+
+    Development.develop_mode = False
+    Semantic.Semantic.__init__ = clean_semantic_init
+    Semantic.Semantic.run = clean_semantic_run
+    try:
+        yield
+    finally:
+        Development.develop_mode = original_develop_mode
+        Semantic.Semantic.__init__ = original_semantic_init
+        Semantic.Semantic.run = original_semantic_run
 
 
 def compile_file(input_file, verbose=False):
@@ -133,32 +193,6 @@ def compile_file(input_file, verbose=False):
         from Parser import parser
         from SemanticLevel import ErrorType
         from SemanticLevel.SemanticRoutines import program_block
-        from Tools import Development
-
-        # Clean semantic stack traces for prettier output
-        if not verbose:
-            # Temporarily disable develop_mode to reduce clutter
-            original_develop_mode = Development.develop_mode
-            Development.develop_mode = False
-            
-            # Patch semantic output for cleaner display
-            from SemanticLevel import Semantic
-            original_semantic_init = Semantic.Semantic.__init__
-            original_semantic_run = Semantic.Semantic.run
-            
-            def clean_semantic_init(self, pars_table):
-                self.parse_table = pars_table
-                self.temp_manager = Semantic.TempManager(1500, 4)
-                Semantic.semantic_instance = self
-            
-            def clean_semantic_run(self, func_name, input_token):
-                from SemanticLevel import SemanticRoutines
-                func_name = func_name[1:len(func_name)]
-                getattr(SemanticRoutines, "func_" +
-                        func_name)(self.temp_manager.get_temp, input_token)
-            
-            Semantic.Semantic.__init__ = clean_semantic_init
-            Semantic.Semantic.run = clean_semantic_run
 
         if verbose:
             print("🔧 C-MINUS COMPILER")
@@ -166,34 +200,38 @@ def compile_file(input_file, verbose=False):
             print(f"   Input file: {input_file}")
             print()
 
-        # Read the input file
-        s = file2str(input_file)
-        
-        # Initialize scanner
-        scnr = scanner(s=s)
-        
-        if verbose:
-            print("🔍 COMPILATION PROCESS:")
-            print("-" * 40)
+        with quiet_semantic_output(verbose):
+            # Read the input file
+            s = file2str(input_file)
 
-        token_count = 0
-        # Process tokens through parser
-        while True:
-            line, next_token_type, next_token = scnr.get_next_token()
-            ErrorType.gl_line_number = line
-            
-            if next_token_type is None:
-                parser.get_next_token("$", line)
-                break
-            else:
+            # Initialize scanner
+            scnr = scanner(s=s)
+
+            if verbose:
+                print("🔍 COMPILATION PROCESS:")
+                print("-" * 40)
+
+            token_count = 0
+            # Process tokens through parser
+            while True:
+                line, next_token_type, next_token = scnr.get_next_token()
+                ErrorType.gl_line_number = line
+
+                if next_token_type is None:
+                    parser.get_next_token("$", line)
+                    break
+
                 parser.get_next_token((str(next_token_type), str(next_token)), line)
                 token_count += 1
                 if verbose and token_count <= 5:
-                    print(f"   Token {token_count:3}: Line {line:2} | {next_token_type:8} | '{next_token}'")
+                    print(
+                        f"   Token {token_count:3}: Line {line:2} | {next_token_type:8} | '{next_token}'"
+                    )
                 elif verbose and token_count == 6:
                     print(f"   ... (processing {token_count}+ tokens)")
 
         # Generate output files
+        save_lexical_errors("lexical_errors.txt", scnr.errors)
         save_tuple2file_based_on_1element("tokens.txt", scnr.tokens)
         save_symbol_table("symbol_table.txt")
         save_tree("parse_tree.txt")
@@ -228,13 +266,7 @@ def compile_file(input_file, verbose=False):
         else:
             print("✅ Semantic: No errors")
             
-        print(f"📁 Output: Generated in output/ directory")
-        
-        # Restore original settings
-        if not verbose:
-            Development.develop_mode = original_develop_mode
-            Semantic.Semantic.__init__ = original_semantic_init
-            Semantic.Semantic.run = original_semantic_run
+        print(f"📁 Output: Generated in {OUTPUT_DIR}/ directory")
         
         return True
         

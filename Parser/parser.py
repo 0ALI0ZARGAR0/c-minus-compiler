@@ -9,7 +9,6 @@ from Tools.Development import develop_mode
 
 
 def pp_list_of_tuples(lsot):
-    f = open("output.txt", "w")
     s = ""
     if develop_mode:
         print("\n[")
@@ -19,11 +18,11 @@ def pp_list_of_tuples(lsot):
         for idx, t in enumerate(lsot):
             s += f"{idx}\t{t}\n"
             if develop_mode:
-                pass
                 print(r"{idx:3}: {t}".format(idx=idx, t=t))
     if develop_mode:
         print("]")
-    f.write(s)
+    with open("output.txt", "w", encoding="utf-8") as f:
+        f.write(s)
 
 
 # Main imports
@@ -49,6 +48,7 @@ for line in grammar.split("@"):
 f = open("input.txt", "r")
 for line in f:
     line_counter += 1
+f.close()
 DFA.states_stack.append(DFA.nterminal_first_state['Program'])
 # DFA.states_stack.append(DFA.nterminal_first_state['P'])
 symbol_row = SymbolTable.SymbolRow()
@@ -114,7 +114,6 @@ def get_next_token(token_tuple, line_number):
                 if row is not None and row.category == "func":
                     fcb = SymbolTable.FuncCallBlock(row)
                     func_call_table_list.append(fcb)
-                    a = 1
             elif token_tuple[0] == 'ID' and func_call_table_list.__len__() > 0 and token_tuple[1] != "output":
                 param_row: SymbolTable.SymbolRow
                 param_row = symbol_table.get_row(token_tuple[1])
@@ -204,13 +203,9 @@ def get_next_token(token_tuple, line_number):
 
 
 def draw_tree():
-    # print(pars_table.pars_table)
-
-    x = semantic_errors
     if develop_mode:
         print("semantic errors: ")
-        print(x)
-    # pp_list_of_tuples(program_block)
+        print(semantic_errors)
 
     a = ""
     for pre, fill, node in DFA.RenderTree(DFA.first_node):

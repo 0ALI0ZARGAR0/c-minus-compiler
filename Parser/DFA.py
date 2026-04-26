@@ -207,8 +207,8 @@ class State:
                     print(error)
                 return False, error
             # self.terminal_trans = dict()
-        except:
-            a = 1
+        except IndexError:
+            pass
         if token == "$":
             error = "#" + str(line_number) + " : " + \
                 "syntax error, Unexpected EOF"
