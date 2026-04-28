@@ -44,19 +44,19 @@ Auto-generated from current branch history.
 
 | Contributor | Share |
 | --- | ---: |
-| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 76.9% |
-| [Eliya Kaheni](https://github.com/EliyaKaheni) | 15.4% |
-| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.7% |
+| [Ali Zargar](https://github.com/0ALI0ZARGAR0) | 77.5% |
+| [Eliya Kaheni](https://github.com/EliyaKaheni) | 15.0% |
+| [Hamidreza Entezari](https://github.com/hamidrezaen) | 7.5% |
 
 ```mermaid
 pie
     title Relative Contribution Share
-    "Ali Zargar" : 76.9
-    "Eliya Kaheni" : 15.4
-    "Hamidreza Entezari" : 7.7
+    "Ali Zargar" : 77.5
+    "Eliya Kaheni" : 15.0
+    "Hamidreza Entezari" : 7.5
 ```
 
-[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/compiler/graphs/contributors)
+[Open GitHub contributors graph](https://github.com/0ALI0ZARGAR0/c-minus-compiler/graphs/contributors)
 <!-- contributor-overview:end -->
 
 ## Architecture Diagrams
@@ -245,6 +245,7 @@ flowchart TB
 
     VERIFY --> REPORT["repeatable phase smoke-check"]
 ```
+
 
 
 
